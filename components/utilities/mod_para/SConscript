@@ -1,0 +1,10 @@
+from building import *
+
+cwd     = GetCurrentDir()
+src     = Glob('*.c')
+ 
+CPPPATH = [cwd]
+
+group   = DefineGroup('mod_para', src, depend = ['RT_USING_USER_PARA'], CPPPATH = CPPPATH)
+
+Return('group')

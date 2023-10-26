@@ -1,0 +1,10 @@
+from building import *
+
+cwd     = GetCurrentDir()
+src     = Glob('*.c')
+ 
+CPPPATH = [cwd]
+
+group   = DefineGroup('utils_list', src, depend = ['RT_USING_UTILS_LIST'], CPPPATH = CPPPATH)
+
+Return('group')

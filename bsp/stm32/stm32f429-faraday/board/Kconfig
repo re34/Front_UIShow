@@ -1,0 +1,192 @@
+menu "Hardware Drivers Config"
+
+config SOC_STM32F429IG
+    bool
+    select SOC_SERIES_STM32F4
+    select RT_USING_COMPONENTS_INIT
+    select RT_USING_USER_MAIN
+    default y
+
+menu "Onboard Peripheral Drivers"
+    config BSP_USING_SPI_FLASH
+        bool "Enable SPI FLASH (W25Q256 spi5)"
+        select BSP_USING_SPI
+        select BSP_USING_SPI5
+        select RT_USING_SFUD
+        select RT_SFUD_USING_SFDP
+        default n
+
+    config BSP_USING_SDRAM
+        bool "Enable SDRAM (W9825G6KH-6)"
+        select BSP_USING_FMC
+        default n
+		
+    config BSP_USING_LTDC
+        bool "Enable LTDC"
+        default n
+
+    config BSP_USING_LCD
+        bool "Enable LCD(4.3cun 480*272)"
+		select BSP_USING_LTDC
+		select BSP_USING_SDRAM
+        default n		
+endmenu
+
+menu "On-chip Peripheral Drivers"
+
+    config BSP_USING_GPIO
+        bool "Enable GPIO"
+        select RT_USING_PIN
+        default y
+
+    config BSP_USING_FMC
+        bool "Enable FMC"
+        default n
+		
+    menuconfig BSP_USING_UART
+        bool "Enable UART"
+        default y
+        select RT_USING_SERIAL
+        if BSP_USING_UART
+            config BSP_USING_UART1
+                bool "Enable UART1"
+                default y
+
+            config BSP_UART1_RX_USING_DMA
+                bool "Enable UART1 RX DMA"
+                depends on BSP_USING_UART1 && RT_SERIAL_USING_DMA
+                default n
+
+            config BSP_USING_UART2
+                bool "Enable UART2"
+                default y
+				
+            config BSP_UART2_RX_USING_DMA
+                bool "Enable UART2 RX DMA"
+                depends on BSP_USING_UART2 && RT_SERIAL_USING_DMA
+                default n
+				
+            config BSP_USING_UART3
+                bool "Enable UART3"
+                default n
+
+            config BSP_UART3_RX_USING_DMA
+                bool "Enable UART3 RX DMA"
+                depends on BSP_USING_UART3 && RT_SERIAL_USING_DMA
+                default n
+				
+            config BSP_USING_UART4
+                bool "Enable UART4"
+                default n
+
+            config BSP_UART4_RX_USING_DMA
+                bool "Enable UART4 RX DMA"
+                depends on BSP_USING_UART41 && RT_SERIAL_USING_DMA
+                default n
+
+            config BSP_USING_UART6
+                bool "Enable UART6"
+                default n
+
+            config BSP_UART6_RX_USING_DMA
+                bool "Enable UART6 RX DMA"
+                depends on BSP_USING_UART6 && RT_SERIAL_USING_DMA
+                default n				
+        endif
+		
+    config BSP_USING_ON_CHIP_FLASH
+        bool "Enable on-chip FLASH"
+        default n
+
+    config BSP_USING_USBD
+		bool "Enable USB DEVICE"
+		default n
+		
+    config RT_USING_RTOS_DRIVER
+		bool "Enable RTOS DRIVER"
+		default n
+		
+    menuconfig BSP_USING_SPI
+        bool "Enable SPI BUS"
+        default n
+        select RT_USING_SPI
+        if BSP_USING_SPI
+            config BSP_USING_SPI1
+                bool "Enable SPI1 BUS"
+                default n
+
+            config BSP_SPI1_TX_USING_DMA
+                bool "Enable SPI1 TX DMA"
+                depends on BSP_USING_SPI1
+                default n
+                
+            config BSP_SPI1_RX_USING_DMA
+                bool "Enable SPI1 RX DMA"
+                depends on BSP_USING_SPI1
+                default n
+            config BSP_USING_SPI2
+                bool "Enable SPI2 BUS"
+				depends on RT_USING_RTOS_DRIVER
+                default n  
+                
+            config BSP_SPI2_TX_USING_DMA
+                bool "Enable SPI2 TX DMA"
+                depends on BSP_USING_SPI2
+                default n
+                
+            config BSP_SPI2_RX_USING_DMA
+                bool "Enable SPI2 RX DMA"
+                depends on BSP_USING_SPI2
+                default n
+				
+            config BSP_USING_SPI5
+                bool "Enable SPI5 BUS"
+                default n
+
+            config BSP_SPI5_TX_USING_DMA
+                bool "Enable SPI5 TX DMA"
+                depends on BSP_USING_SPI5
+                default n
+                
+            config BSP_SPI5_RX_USING_DMA
+                bool "Enable SPI5 RX DMA"
+                depends on BSP_USING_SPI5
+				select BSP_SPI5_TX_USING_DMA
+                default n
+        endif
+
+    menuconfig BSP_USING_I2C
+        bool "Enable I2C(soft simulate)"
+        default n
+        select RT_USING_I2C
+        if BSP_USING_I2C
+            config BSP_USING_I2C1
+                bool "Enable I2C1, Please Config Pin In i2c_port.h"
+                default n	
+            config BSP_USING_I2C2
+                bool "Enable I2C2, Please Config Pin In i2c_port.h"
+                default n				
+        endif
+		
+    menuconfig BSP_USING_PULSE_ENCODER
+        bool "Enable Pulse Encoder"
+        default n
+        select RT_USING_PULSE_ENCODER
+        if BSP_USING_PULSE_ENCODER
+            config BSP_USING_PULSE_ENCODER2
+                bool "Enable Pulse Encoder2"
+                default n
+
+            config BSP_USING_PULSE_ENCODER4
+                bool "Enable Pulse Encoder4"
+                default n			
+        endif		
+    source "../libraries/HAL_Drivers/Kconfig"    
+    
+endmenu
+
+menu "Board extended module Drivers"
+
+endmenu
+ 
+endmenu
