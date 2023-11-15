@@ -1,7 +1,12 @@
+#if defined(UI_USING_PAGE_SETTING)
 #include "ui_utils.h"
+
+#if defined(RT_USING_USER_TRANSPORT)
 #include "mod_trans.h"
+#endif
 
 //extern int dbg_printf(const char *fmt, ...);
+
 
 #define TOP_WITH			480
 #define TOP_HEIGHT			120
@@ -507,5 +512,5 @@ void sample_tile_exit(void)
 	lv_obj_del(ui_Dialog.cont);
 	ui_Dialog.cont = NULL;
 }
-
+#endif
 

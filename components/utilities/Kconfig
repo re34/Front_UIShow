@@ -237,7 +237,21 @@ config RT_USING_INPUT_DEV
 config RT_USING_USER_UI
     bool "Enable user UI (add by wzlxy)"
     default n
-
+    if RT_USING_USER_UI
+        config UI_USING_PAGE_PARAM
+            bool "UI page of param"
+            default n
+        config UI_USING_PAGE_SUMMARY
+            bool "UI page of summary"
+            default n	
+        config UI_USING_PAGE_SETTING
+            bool "UI page of setting"
+            default n
+        config UI_USING_FUNC_LOGIN
+            bool "UI page Function of login"
+            default n				
+    endif
+	
 config RT_USING_USER_TRANSPORT
     bool "Enable user transport (add by wzlxy)"
     default n

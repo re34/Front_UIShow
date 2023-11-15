@@ -4,7 +4,7 @@
 
 /***********dac 具体芯片使能*****************/
 #ifdef RT_USING_AD5541
-#include "spi_ad5433.h"
+#include "spi_ad5541.h"
 #endif
 
 #ifdef RT_USING_AD9833
@@ -64,15 +64,20 @@ M_DacChipOpr *GetMatchDacChip(M_DacChipOpr *head, char *pcName)
  ***********************************************************************/
 M_DacChipOpr* DacChipInit(void *argv)
 {
+	if(argv == NULL)
+		return NULL;
+
 	M_DacChipOpr *m_DacChipHead = NULL;
-#ifdef RT_USING_AD5541
-	m_DacChipHead = HW_Ad5541Register((void *)(((M_DacPara *)argv)->_tScanPara));
-#endif
+	struct _sys_paras *sPara = (struct _sys_paras *)argv;	
 #ifdef RT_USING_AD9833
-	M_DacPara *sPara = (M_DacPara *)argv;
 	m_DacChipHead = HW_Ad9833Register((void *)&sPara->_tDdsPara);
 #endif
-    return m_DacChipHead;
+
+#ifdef RT_USING_AD5541
+	m_DacChipHead = HW_Ad5541Register((void *)&sPara->_uScanPara);
+#endif
+	return m_DacChipHead;
+
 }
 
 
@@ -107,7 +112,7 @@ M_DacChipOpr* DacChipExit(M_DacChipOpr **pHead, char *pcName)
     {
         rt_kprintf("no node find in List\n");
     }
-		return *pHead;
+	return *pHead;
 }
 
 

@@ -13,15 +13,18 @@
 
 *		3. 锁定状态切换后，更新_initVal
 ***************************************************************************************************/
-
-
-
 #include <stdlib.h>
 #include "lvgl.h"
 #include "lv_port_indev.h"
 #include "ui_utils.h"
-#include "mod_trans.h"
+#if defined(RT_USING_USER_TRANSPORT)
+	#include "mod_trans.h"
+#endif
 
+
+enc_flewChk_t enc_Chker;
+
+#if defined(UI_USING_PAGE_SETTING)
 
 
 const char* label_list[PARAM_ITEM_NUMS_END] = {
@@ -66,8 +69,6 @@ const char* view_icons[3] = {
 };
 
 struct _ui_Setting _settingUI;
-enc_flewChk_t enc_Chker;
-
 
 
 static void spinbox_Send_updateVal(uint8_t index, int32_t value)
@@ -126,20 +127,6 @@ void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val)
 		lv_obj_add_state(obj, LV_STATE_CHECKED);
 	else
 		lv_obj_clear_state(obj, LV_STATE_CHECKED);			
-}
-
-
-void spinbox_overFlow_send(bool enable)
-{
-	enc_Chker.idleCnt = 0;
-	enc_Chker.bIsDataSend = false;
-	enc_Chker.bIsIncEnabled = enable;
-	if(enc_Chker.bIsTimerRun == false)
-	{
-		enc_Chker.bIsTimerRun = true;
-		//开启空闲超时检测
-		lv_timer_resume(enc_Chker.enc_flewTimer);
-	}
 }
 
 
@@ -963,5 +950,19 @@ void Gui_settingExit(lv_obj_t* root)
 	setting_tile_exit();
 	sample_tile_exit();
 	return;
+}
+#endif
+
+void spinbox_overFlow_send(bool enable)
+{
+	enc_Chker.idleCnt = 0;
+	enc_Chker.bIsDataSend = false;
+	enc_Chker.bIsIncEnabled = enable;
+	if(enc_Chker.bIsTimerRun == false)
+	{
+		enc_Chker.bIsTimerRun = true;
+		//开启空闲超时检测
+		lv_timer_resume(enc_Chker.enc_flewTimer);
+	}
 }
 

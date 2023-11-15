@@ -17,9 +17,16 @@
 #include <rtdevice.h>
 #include <board.h>
 #include "application.h"
-//#include "mod_para.h"
-#include "mod_trans.h"
-#include "spi_ad7606.h"
+#if defined(RT_USING_USER_PARA)
+	#include "mod_para.h"
+#endif
+#if defined(RT_USING_USER_TRANSPORT)
+	#include "mod_trans.h"
+#endif
+
+#if defined(RT_USING_DAC_DEV)
+	#include "mod_dac.h"
+#endif
 
 
 extern int lvgl_thread_init(void);
@@ -36,22 +43,24 @@ void Core_CreateMod(MOD_INSERT* core, int classType, uint8_t id, void *argv)
 	int ret = 0;
 	switch(classType)
 	{
+#ifdef RT_USING_DAC_DEV
 		case CLASS_CHIPDAC:
-#if 0
 			core->mod_dac = DacChipInit(argv);  //mod_dac就是DAC设备的链表头
 			if(core->mod_dac == NULL)
 			{
 				rt_kprintf("Create DAC device fail!\r\n");
 			}
-#endif
 			break;
+#endif
+#ifdef RT_USING_INPUT_DEV
 		case CLASS_INPUT:
 			ret = InputDevInit(core->mod_InputList, id, argv);
 			if(ret < 0)
 			{
 				rt_kprintf("Create Input device fail!\r\n");
 			}
-			break;		
+			break;	
+#endif
 		default:
 			break;
 	}
@@ -62,9 +71,11 @@ void Core_DeleteMod(MOD_INSERT* core, int mode, char *pcName)
 {
     switch(mode)
     {
+#ifdef RT_USING_DAC_DEV    
         case CLASS_CHIPDAC:
-            //core->mod_dac = DacChipExit(&core->mod_dac, pcName); //删除节点后，更新链表
+            core->mod_dac = DacChipExit(&core->mod_dac, pcName); //删除节点后，更新链表
             break;
+#endif
         default:
             break;
     } 
@@ -78,10 +89,19 @@ T_LaserCore MainCore = {
 
 int main(void)
 {
+	MOD_INSERT *ptLaser = &g_tLaserManager;
+
 	rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
 	rt_kprintf("Version: 4.0.9\r\n");
+	
+#if defined(RT_USING_USER_PARA)
+	Get_SystemParam();
+#endif
 
+#if defined(RT_USING_USER_TRANSPORT)
 	trans_modbusInit();
+#endif
+	MainCore.new_object(ptLaser, CLASS_CHIPDAC, 0, (void *)&_g_ParasPool);	
 	lvgl_thread_init();
 	while(1)
 	{

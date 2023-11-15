@@ -4,6 +4,11 @@
 
 #include "lvgl.h"
 #include "ui_utils.h"
+
+
+
+#if defined(RT_USING_USER_TRANSPORT)
+
 //串口3    rts PH8
 //#define RS485_RST_PIN    GET_PIN(H, 8)
 
@@ -248,5 +253,5 @@ void trans_modbusInit(void)
 
 }
 
-
+#endif
 

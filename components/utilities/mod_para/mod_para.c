@@ -31,29 +31,59 @@ const char *text_name[co_type_max + 1U] = {
 };
 
 static struct ini_data_t ini_val_group[] = {
-	__INIT_INI_VAL("ad9833", "frequency", u32, 0, 0x00),
-    __INIT_INI_VAL("ad9833", "frequency register", u8, 0, 0x01),
-    __INIT_INI_VAL("ad9833", "phase", u16, 0, 0x02),
-    __INIT_INI_VAL("ad9833", "phase register", u8, 0, 0x03),
-    __INIT_INI_VAL("ad9833", "wave", u8, 0, 0x04),
-    __INIT_INI_VAL("ad9833", "chipID", u8, 0, 0x05),
+	__INIT_INI_VAL("dds", "frequency", u32, 0, 0x00),
+    __INIT_INI_VAL("dds", "frequency register", u8, 0, 0x01),
+    __INIT_INI_VAL("dds", "phase", u16, 0, 0x02),
+    __INIT_INI_VAL("dds", "phase register", u8, 0, 0x03),
+    __INIT_INI_VAL("dds", "wave", u8, 0, 0x04),
+    __INIT_INI_VAL("dds", "chipID", u8, 0, 0x05),
+    /****************************************************************/
+    __INIT_INI_VAL("HvPzt", "bias", u8, 0, 0x06),
+    __INIT_INI_VAL("HvPzt", "amp", u16, 0, 0x07),
+    __INIT_INI_VAL("HvPzt", "frequency", u8, 0, 0x08),
+	__INIT_INI_VAL("HvPzt", "stat", u32, 0, 0x09),    
+    __INIT_INI_VAL("HvPzt", "chipID", u8, 0, 0x0a),
+    __INIT_INI_VAL("HvPzt", "lockstat", u8, 0, 0x0b),    
 };
 
 #define INI_VAL_NUM() (sizeof(ini_val_group) / sizeof(ini_val_group[0]))
 
 
-struct _paras_typedef _g_ParasPool = {
-    .t_DacParas = {
-        ._tDdsPara = {
-            .frequency = 0,
-            .freq_sfr = 0,
-            .phase = 0,
-            .phase_sfr = 0,
-            .wave_mode = Wave_Type_Sin,
-            .chipID = 0,
-        },
+//参数 = 实际设定值 x 1000 (除PZT频率外)
+struct _sys_paras _g_ParasPool = 
+{
+#ifdef RT_USING_AD9833
+    ._tDdsPara = {
+        .frequency = 0,
+        .freq_sfr = 0,
+        .phase = 0,
+        .phase_sfr = 0,
+        .wave_mode = Wave_Type_Sin,
+        .chipID = 0,
     },
+#endif
+#ifdef RT_USING_AD5541
+#ifdef USING_HVPZT_SCAN
+    ._uScanPara = {
+		.params[0] = 7000,			
+		.params[1] = 7000,
+		.params[2] = 10,
+		.params[3] = State_In_ScanClose,
+		.params[4] = ChipID_HvScan_DecBias,
+		.params[5] = Lock_In_StartOn,			
+	}
+#else
+    ._uScanPara = {
+		.params[0] = State_In_ScanClose,
+		.params[1] = 32700,			
+		.params[2] = 32700,
+		.params[3] = 10,
+		.params[4] = 0,
+	}
+#endif
+#endif
 };
+
 
 
 
@@ -81,12 +111,19 @@ comm_val_t *Get_ParaDataType(uint16_t index)
 #define VAL(_x) (Para_Obj._x)
 
     static comm_val_t struct_val_table[] = {
-        {VAL(t_DacParas._tDdsPara.frequency), co_uint32},
-        {VAL(t_DacParas._tDdsPara.freq_sfr), co_uint8},
-        {VAL(t_DacParas._tDdsPara.phase), co_uint16},
-        {VAL(t_DacParas._tDdsPara.phase_sfr), co_uint8},
-        {VAL(t_DacParas._tDdsPara.wave_mode), co_uint8},
-        {VAL(t_DacParas._tDdsPara.chipID), co_uint8},        
+        {VAL(_tDdsPara.frequency), co_uint32},
+        {VAL(_tDdsPara.freq_sfr), co_uint8},
+        {VAL(_tDdsPara.phase), co_uint16},
+        {VAL(_tDdsPara.phase_sfr), co_uint8},
+        {VAL(_tDdsPara.wave_mode), co_uint8},
+        {VAL(_tDdsPara.chipID), co_uint8},
+/****************************************************************/
+        {VAL(_uScanPara.params[0]), co_uint32},
+        {VAL(_uScanPara.params[1]), co_uint32},
+        {VAL(_uScanPara.params[2]), co_uint32},
+        {VAL(_uScanPara.params[3]), co_uint32},
+        {VAL(_uScanPara.params[4]), co_uint32},
+        {VAL(_uScanPara.params[5]), co_uint32},        
     };
 #define STRUCT_VAL_NUM() (sizeof(struct_val_table) / sizeof(struct_val_table[0]))
     if (index < STRUCT_VAL_NUM())
@@ -302,9 +339,10 @@ void Get_SystemParam(void)
 }
 
 
-void Set_SystemParam(comm_val_t *pv, uint16_t index)
+void Set_SystemParam(uint16_t index)
 {
     struct ini_data_t *pIni = soft_GetIniTarget(index);
+    comm_val_t *pv = Get_ParaDataType(index);	
 	
     if (NULL == pIni || NULL == pv)
         return;

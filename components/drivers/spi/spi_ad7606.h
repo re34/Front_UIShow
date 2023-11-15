@@ -18,6 +18,16 @@
 #define AD_CVA_PORT				GPIOC
 #define AD_CVA_PIN				GPIO_PIN_9
 
+#define	AD7606_CHN_NUM			1
+
+struct _tagAdcChip
+{
+	struct rt_semaphore dmaCpt_Sem[2];
+	uint8_t i_FinalCnt;
+};
+
+extern struct _tagAdcChip chipContent;
+
 extern void adc_TaskInit(void);
 
 #endif

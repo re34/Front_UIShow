@@ -1,3 +1,4 @@
+#if defined(UI_USING_FUNC_LOGIN)
 #include "ui_utils.h"
 
 
@@ -260,5 +261,5 @@ void Gui_loginExit(void)
 	lv_obj_del(login_win.kb);		 //删除键盘
 	lv_obj_del(login_Dialog.cont);   //删除登录提示框
 }
-
+#endif
 

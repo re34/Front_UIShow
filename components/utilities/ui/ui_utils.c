@@ -2,7 +2,12 @@
 #include "utils_list.h"
 #include "ui_utils.h"
 #include "ui_bar.h"
+#if defined(RT_USING_USER_TRANSPORT)
 #include "mod_trans.h"
+#endif
+#if defined(RT_USING_USER_PARA)
+	#include "mod_para.h"
+#endif
 
 static M_listObject *menu_list;
 static lv_group_t *group;
@@ -30,6 +35,7 @@ static M_PageObject page_main = {
 	.exit_handler			= PAGE_EXIT_DEF(main)
 };
 
+#if defined(UI_USING_PAGE_SETTING)
 
 static M_PageObject page_setting = {
 	.page_id				= PAGE_SETTING,
@@ -37,13 +43,16 @@ static M_PageObject page_setting = {
 	.focus_handler			= PAGE_FOCUS_DEF(setting),
 	.exit_handler			= PAGE_EXIT_DEF(setting)
 };
+#endif
 
+#if defined(UI_USING_PAGE_PARAM)
 static M_PageObject page_param = {
 	.page_id				= PAGE_PARAM,
 	.init_handler			= PAGE_INIT_DEF(param),
 	.focus_handler			= PAGE_FOCUS_DEF(param),
 	.exit_handler			= PAGE_EXIT_DEF(param)
 };
+#endif
 
 
 void Gui_AddToIndevGroup(lv_obj_t *obj)
@@ -58,6 +67,7 @@ void Gui_remove_IndevGroup(void)
     lv_group_remove_all_objs(group);
 }
 
+#if defined(RT_USING_USER_TRANSPORT)
 void Gui_SendMessge(rt_mq_t mq, uint8_t addr, uint8_t regNum, uint8_t msgType, uint32_t val)
 {
 	M_UartMsgEvent m_Msg_;
@@ -68,6 +78,7 @@ void Gui_SendMessge(rt_mq_t mq, uint8_t addr, uint8_t regNum, uint8_t msgType, u
 	m_Msg_.w_data.recvDate = val;
 	rt_mq_send(mq, &(m_Msg_), sizeof(m_Msg_)); 
 }
+#endif
 
 void Gui_DialogShow(struct _dialog_t *uiObj, lv_obj_t *obj, uint8_t type)
 {	
@@ -370,14 +381,14 @@ void spinbox_flush_val(lv_obj_t *obj, uint32_t val)
 }
 
 
-lv_obj_t *spinBtn_style_init(tab_module_t* t_objBox, lv_event_cb_t event_cb)
+lv_obj_t *spinBtn_style_init(tab_module_t* t_objBox, lv_event_cb_t event_cb, void * user_data)
 {
 	//左右按键设置
 	lv_obj_t * btn = lv_btn_create(t_objBox->_root);
 	lv_obj_set_size(btn, 30, 30);
 	lv_obj_set_style_text_font(btn, &lv_font_montserrat_14,  LV_PART_MAIN);
 	btn->user_data = (void *)&t_objBox->_attr.itemIndex;
-	lv_obj_add_event_cb(btn, event_cb, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(btn, event_cb, LV_EVENT_ALL, user_data);
   	lv_group_remove_obj(btn); //默认不被聚焦
   	return btn;
 }
@@ -396,17 +407,26 @@ static void btnOk_event_cb(lv_event_t* e)
 		{
 			//保存
 			case Dialog_Type_Save:
-				Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_SAVE));
+				//Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_SAVE));
 			break;
 			case Dialog_Type_TaSave:
-				Gui_SendMessge(uart_mq, MODBUS_TA_SAVE_ADDR, 2, E_Modbus_TA_Write, 0xFF);
+#if defined(RT_USING_USER_PARA)				
+				for(int i = IniLocal_Inx_bias; i < IniLocal_Inx_bias + HVPZT_NUMS_END; i++ )
+				{
+					Set_SystemParam(i);
+				}
+#endif
+			break;
+			case Dialog_Type_Power:		
+				lv_event_send(_taUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
 			break;			
 			//提示类对话框
 			case Dialog_Type_Tips:
 		        lv_obj_clear_flag(lv_layer_top(), LV_OBJ_FLAG_CLICKABLE);  
 		        lv_obj_set_style_bg_opa(lv_layer_top(), LV_OPA_TRANSP, 0);  
 		        lv_obj_add_flag(parent, LV_OBJ_FLAG_HIDDEN);				
-			break;
+			break;			
+#if defined(UI_USING_PAGE_SETTING)
 			case Dialog_Type_Tips_Move:
 		        lv_obj_clear_flag(lv_layer_top(), LV_OBJ_FLAG_CLICKABLE);  
 		        lv_obj_set_style_bg_opa(lv_layer_top(), LV_OPA_TRANSP, 0);  
@@ -443,6 +463,7 @@ static void btnOk_event_cb(lv_event_t* e)
 				}
 			}		
 			break;
+#endif
 		}
     }
 }
@@ -456,8 +477,10 @@ static void btnCancel_event_cb(lv_event_t* e)
         lv_obj_clear_flag(lv_layer_top(), LV_OBJ_FLAG_CLICKABLE);   // 清除标志
         lv_obj_set_style_bg_opa(lv_layer_top(), LV_OPA_TRANSP, 0);  // 设置透明度
         lv_obj_add_flag(parent, LV_OBJ_FLAG_HIDDEN);
+#if defined(UI_USING_PAGE_SETTING)			
 		if(ui_Dialog.bCheckFlag == Dialog_Type_Tips_Move)					
 			lv_tabview_set_act(_settingUI._tabCont, 0, LV_ANIM_ON);//回滚到默认页
+#endif
     }
 
 }
@@ -505,8 +528,12 @@ void Gui_menuInit(void)
 	Gui_Style_Init();
 	Gui_PageInsert(menu_list, &page_boot);
 	Gui_PageInsert(menu_list, &page_main);
+#if defined(UI_USING_PAGE_SETTING)
 	Gui_PageInsert(menu_list, &page_setting);
+#endif
+#if defined(UI_USING_PAGE_PARAM)
 	Gui_PageInsert(menu_list, &page_param);
+#endif
 	//LOGO页面创建
 	M_PageObject *page = Gui_PageCreate(menu_list, PAGE_BOOT);
 	if(page != NULL)

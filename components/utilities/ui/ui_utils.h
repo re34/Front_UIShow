@@ -3,7 +3,10 @@
 
 #include <rtthread.h>
 #include <lvgl.h>
-#include "mod_trans.h"
+
+#if defined(RT_USING_USER_TRANSPORT)
+	#include "mod_trans.h"
+#endif
 
 #define TIME_ON_TRIGGER		10
 
@@ -100,6 +103,7 @@
 
 
 #define PZT_AMP_MAX						14000 // 14V
+
 
 enum {
 	ENUM_TYPE_SW = 0,
@@ -223,13 +227,62 @@ typedef struct {
 } ui_locate_t;
 
 
-typedef struct
+
+
+
+
+
+typedef struct _dialog_t
 {
 	lv_obj_t* cont;
-	lv_obj_t* lableValue;
-	lv_obj_t* lableUnit;
-	Modbus_Date *sample;
-}SubInfo_t;
+	lv_obj_t* title;
+	lv_obj_t* btnOK;
+	uint8_t bCheckFlag;
+} dialog_t;	
+
+
+struct m_attr_t
+{
+	bool bHasDot;
+	uint8_t itemIndex;
+	int32_t range_max;
+	int32_t range_min;
+	int32_t _initVal;
+};
+
+typedef struct _tab_module
+{
+	struct m_attr_t _attr;
+    lv_obj_t* _root;
+    lv_obj_t* _mObj;
+}tab_module_t;
+
+typedef struct _sw_module
+{
+	struct m_attr_t _attr;
+    lv_obj_t *_mObj;
+	lv_anim_t anim;
+}sw_module_t;
+
+
+typedef struct _enc_flewChk
+{
+	bool bIsTimerRun;
+	bool bIsDataSend;
+	bool bIsIncEnabled;
+	uint32_t idleCnt;
+	uint8_t targetInx;
+	lv_timer_t *enc_flewTimer;
+}enc_flewChk_t;
+
+
+
+#if defined(UI_USING_PAGE_SETTING)
+
+/********************************************************
+* 设置界面
+*******************************************************/
+
 
 typedef struct
 {
@@ -238,7 +291,21 @@ typedef struct
 	lv_obj_t* Bar_icon;
 }viewInfo_t;
 
+struct _ui_Setting
+{
+	bool bIsAdmin;
+    lv_obj_t* _tabCont;
+	struct _tab_module  *_mods[PARAM_ITEM_NUMS_END];
+	struct _tab_module  *_mods_sw[RELAY_NUMS];
+	struct _sw_module  	*_mods_sp[2];
+	viewInfo_t labelGrp[3];
+	uint32_t iSwitchs;
+};
 
+
+/********************************************************
+*  采样界面
+*******************************************************/
 typedef struct _module_t
 {
     lv_obj_t* obj_root;
@@ -249,13 +316,13 @@ typedef struct _module_t
 	Modbus_Date *mod_sample;	
 }module_t;
 
-typedef struct _dialog_t
+typedef struct
 {
 	lv_obj_t* cont;
-	lv_obj_t* title;
-	lv_obj_t* btnOK;
-	uint8_t bCheckFlag;
-} dialog_t;	
+	lv_obj_t* lableValue;
+	lv_obj_t* lableUnit;
+	Modbus_Date *sample;
+}SubInfo_t;
 
 
 struct _ui_info
@@ -287,67 +354,36 @@ struct _ui_info
 	} errInfoCont;	
 	lv_timer_t *collect_timer;
 };
+#endif
+/*****************************TA界面************************************/
 
 
+#if defined(UI_USING_PAGE_PARAM)
+//HVPZT 相关参数
 
+#define HVPZT_NUMS_END				3	  //高压pzt扫描参数
+#define Scan_tileview_Page_Num 		2
 
-struct m_attr_t
+enum E_IniLocal
 {
-	//bool isProcHandled;    //避免重复执行标志位
-	bool bHasDot;
-	uint8_t itemIndex;
-	int32_t range_max;
-	int32_t range_min;
-	int32_t _initVal;
+	IniLocal_Inx_bias = 6,
+	IniLocal_Inx_amp = 7,
+	IniLocal_Inx_freq = 8,
 };
-
-typedef struct _tab_module
-{
-	struct m_attr_t _attr;
-    lv_obj_t* _root;
-    lv_obj_t* _mObj;
-}tab_module_t;
-
-
-typedef struct _sw_module
-{
-	struct m_attr_t _attr;
-    lv_obj_t *_mObj;
-	lv_anim_t anim;
-}sw_module_t;
-
-
-struct _ui_Setting
-{
-	bool bIsAdmin;
-    lv_obj_t* _tabCont;
-	struct _tab_module  *_mods[PARAM_ITEM_NUMS_END];
-	struct _tab_module  *_mods_sw[RELAY_NUMS];
-	struct _sw_module  	*_mods_sp[2];
-	viewInfo_t labelGrp[3];
-	uint32_t iSwitchs;
-};
-
 
 struct _Ta_Setting
 {
     lv_obj_t* _taCont;
-	struct _tab_module  *_mods[TA_T_NUMS_END];
-	viewInfo_t labelGrp[4];
-	lv_timer_t *sample_timer;
+	struct _tab_module  *_mods[HVPZT_NUMS_END];
+	struct _sw_module  	*_mods_sp[1];
 };
+#endif
 
 
-typedef struct _enc_flewChk
-{
-	bool bIsTimerRun;
-	bool bIsDataSend;
-	bool bIsIncEnabled;
-	uint32_t idleCnt;
-	uint8_t targetInx;
-	lv_timer_t *enc_flewTimer;
-}enc_flewChk_t;
 
+/******************************登录按钮****************************************/
+
+#if defined(UI_USING_FUNC_LOGIN)
 
 struct _login_info
 {
@@ -357,6 +393,7 @@ struct _login_info
 	lv_obj_t* pwdInput;
 	lv_obj_t* loginBtn;
 };
+#endif
 
 
 extern uint8_t anim_reback;
@@ -400,14 +437,23 @@ extern void Gui_mainInit(lv_obj_t* root);
 extern void Gui_mainOnFocus(lv_obj_t* root);
 extern void Gui_mainExit(lv_obj_t* root);
 
+#if defined(UI_USING_PAGE_SETTING)
 extern void Gui_settingInit(lv_obj_t* root);
 extern void Gui_settingOnFocus(lv_obj_t* root);
 extern void Gui_settingExit(lv_obj_t* root);
 
+extern void sample_tile_init(lv_obj_t* root);
+extern void sample_tile_exit(void);
+extern void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val);
+
+#endif
+
+#if defined(UI_USING_PAGE_PARAM)
 //TA setting
 extern void Gui_paramInit(lv_obj_t* root);
 extern void Gui_paramOnFocus(lv_obj_t* root);
 extern void Gui_paramExit(lv_obj_t* root);
+#endif
 
 
 extern void Gui_loginInit(void);
@@ -428,7 +474,7 @@ extern void Gui_setOutlineLight(lv_obj_t *obj, lv_color_t color, bool enable);
 
 extern void spinbox_overFlow_send(bool enable);
 extern void spinbox_flush_val(lv_obj_t *obj, uint32_t val);
-extern void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val);
+
 
 
 extern bool Gui_CheckTimeOut(lv_timeCount *tm);
@@ -436,13 +482,13 @@ extern bool Gui_SetTimeOut(lv_timeCount *tm, uint32_t ms);
 extern void Gui_PageCallback(void* arg, bool del);
 
 
-extern void sample_tile_init(lv_obj_t* root);
-extern void sample_tile_exit(void);
+
 extern void Gui_dialog_Create(void);
 extern void Gui_menuInit(void);
 
 extern void spinContent_style_init(tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb);
-extern lv_obj_t *spinBtn_style_init(tab_module_t* t_objBox, lv_event_cb_t event_cb);
+extern lv_obj_t *spinBtn_style_init(tab_module_t* t_objBox, lv_event_cb_t event_cb, void * user_data);
+
 
 #endif
 

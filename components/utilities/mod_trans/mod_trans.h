@@ -3,6 +3,7 @@
 
 #include <rtthread.h>
 
+#if defined(RT_USING_USER_TRANSPORT)
 
 //自动找峰(13)/手动失锁(12)/保存(11)/空(10)/自动锁定失锁（9）/开关机(8)/ 7~ 0继电器
 //11 ~ 13 不需要保存状态
@@ -37,16 +38,13 @@
 #define MAX_CONFIG_NUM		16	 //switch + 15 spinbox
 
 //TA
-#define TA_UART_NAME 				"uart2"
+#define TA_UART_NAME 				"uart3"
 #define MODBUS_TA_CFG_ADDR			1	 //ta配置起始寄存器地址
 #define MODBUS_TA_SAVE_ADDR			15	 //ta保存起始寄存器地址
 #define MODBUS_TA_SAMPLE_ADDR		17	 //ta采样起始寄存器地址
 #define MODBUS_TA_SAMPLE_CNT		4	 //ta采样值寄存器数量
 #define MAX_TA_NUM					12	 //ta设置项+ 保存 + 采样 
-//TA参数数量
-#define TA_I_NUMS_END 				3     //电流参数
-#define TA_T_NUMS_END				7	  //温度参数
-#define TA_SAMPLE_ADDR				8	 //ta采样起始数组地址
+
 
 
 
@@ -77,5 +75,6 @@ extern Modbus_Date ui_taVal[MAX_TA_NUM];
 
 extern void trans_modbusInit(void);
 
+#endif
 #endif
 

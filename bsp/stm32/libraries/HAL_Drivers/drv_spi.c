@@ -25,6 +25,10 @@
 #define LOG_TAG              "drv.spi"
 #include <drv_log.h>
 
+#ifdef RT_USING_AD7606
+extern uint8_t covNums;
+#endif
+
 enum
 {
 #ifdef BSP_USING_SPI1
@@ -273,11 +277,10 @@ static rt_uint32_t spixfer(struct rt_spi_device *device, struct rt_spi_message *
 
     struct stm32_spi *spi_drv =  rt_container_of(device->bus, struct stm32_spi, spi_bus);
     SPI_HandleTypeDef *spi_handle = &spi_drv->handle;
-    struct stm32_hw_spi_cs *cs = device->parent.user_data;
 
     if (message->cs_take)
     {
-        HAL_GPIO_WritePin(cs->GPIOx, cs->GPIO_Pin, GPIO_PIN_RESET);
+        rt_pin_write(device->cs_pin, PIN_LOW);
     }
 
     LOG_D("%s transfer prepare and start", spi_drv->config->bus_name);
@@ -360,9 +363,13 @@ static rt_uint32_t spixfer(struct rt_spi_device *device, struct rt_spi_message *
 		//dma非阻塞方式
 		if (spi_drv->spi_dma_flag & (SPI_USING_TX_DMA_FLAG | SPI_USING_RX_DMA_FLAG))
 		{
-	        while (HAL_SPI_GetState(spi_handle) != HAL_SPI_STATE_READY)
+			DevicePriFunc PriFunc;
+			PriFunc = (void (*)(void *))device->parent.user_data;
+		    RT_ASSERT(PriFunc != RT_NULL);
+		    while (HAL_SPI_GetState(spi_handle) != HAL_SPI_STATE_READY)
 			{
-				rt_sem_take((rt_sem_t)(device->user_data), 1000);
+				/*******执行私有任务*****/
+				(*PriFunc)(device->user_data);
 			}
 		}else{
 			while (HAL_SPI_GetState(spi_handle) != HAL_SPI_STATE_READY);
@@ -371,7 +378,7 @@ static rt_uint32_t spixfer(struct rt_spi_device *device, struct rt_spi_message *
 
     if (message->cs_release)
     {
-        HAL_GPIO_WritePin(cs->GPIOx, cs->GPIO_Pin, GPIO_PIN_SET);
+        rt_pin_write(device->cs_pin, PIN_HIGH);
     }
     return message->length;
 }
@@ -494,45 +501,33 @@ static int rt_hw_spi_bus_init(void)
     return result;
 }
 
+
 /**
   * Attach the spi device to SPI bus, this function must be used after initialization.
   */
-rt_err_t rt_hw_spi_device_attach(const char *bus_name, const char *device_name, GPIO_TypeDef *cs_gpiox, uint16_t cs_gpio_pin)
+rt_err_t rt_hw_spics_device_attach(const char *bus_name, const char *device_name, rt_base_t cs_pin, void *user_data)
 {
     RT_ASSERT(bus_name != RT_NULL);
     RT_ASSERT(device_name != RT_NULL);
+    RT_ASSERT(cs_pin != PIN_NONE);
 
     rt_err_t result;
     struct rt_spi_device *spi_device;
-    struct stm32_hw_spi_cs *cs_pin;
 
-    /* initialize the cs pin && select the slave*/
-    GPIO_InitTypeDef GPIO_Initure;
-    GPIO_Initure.Pin = cs_gpio_pin;
-    GPIO_Initure.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_Initure.Pull = GPIO_PULLUP;
-    GPIO_Initure.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(cs_gpiox, &GPIO_Initure);
-    HAL_GPIO_WritePin(cs_gpiox, cs_gpio_pin, GPIO_PIN_SET);
+    rt_pin_mode(cs_pin, PIN_MODE_OUTPUT);    /* 设置片选管脚模式为输出 */
+	rt_pin_write(cs_pin, PIN_HIGH);
 
     /* attach the device to spi bus*/
     spi_device = (struct rt_spi_device *)rt_malloc(sizeof(struct rt_spi_device));
     RT_ASSERT(spi_device != RT_NULL);
-    cs_pin = (struct stm32_hw_spi_cs *)rt_malloc(sizeof(struct stm32_hw_spi_cs));
-    RT_ASSERT(cs_pin != RT_NULL);
-    cs_pin->GPIOx = cs_gpiox;
-    cs_pin->GPIO_Pin = cs_gpio_pin;
-    result = rt_spi_bus_attach_device(spi_device, device_name, bus_name, (void *)cs_pin);
 
+    result = rt_spi_bus_attach_device_cspin(spi_device, device_name, bus_name, cs_pin, user_data);
     if (result != RT_EOK)
     {
         LOG_E("%s attach to %s faild, %d\n", device_name, bus_name, result);
     }
-
     RT_ASSERT(result == RT_EOK);
-
     LOG_D("%s attach to %s done", device_name, bus_name);
-
     return result;
 }
 
