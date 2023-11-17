@@ -8,6 +8,11 @@
 #if defined(RT_USING_USER_PARA)
 	#include "mod_para.h"
 #endif
+#if defined(RT_USING_DAC_DEV)
+	#include "mod_dac.h"
+#endif
+#include "application.h"
+
 
 
 #if defined(UI_USING_PAGE_PARAM)
@@ -39,9 +44,19 @@ static void param_inc_event_cb(lv_event_t * e)
 		uint8_t index = *((uint8_t *)obj->user_data);
         lv_spinbox_increment(_taUI._mods[index]->_mObj);	
 		sPara->params[index] = lv_spinbox_get_value(_taUI._mods[index]->_mObj);	
-		rt_kprintf("inc sPara->params[%d] = %ld\n", index, sPara->params[index]);
 		if(sPara->chipVal.scanState > State_In_ScanClose)
-			rt_sem_release(&param_Sem);		
+			rt_sem_release(&param_Sem);	
+		else{
+			M_DacChipOpr *pDacChip = GetMatchDacChip(g_tLaserManager.mod_dac, "dac_ad5541");
+			switch(index)
+			{
+				case ScanItem_bias:
+					pDacChip->_SetWaveFunc(pDacChip, ChipID_HvScan_Bias, HvFunc_Bias2RegVal(sPara->params[index]));	
+				break;
+				default:
+				break;
+			}			
+		}		
     }
 }
 
@@ -53,9 +68,19 @@ static void param_dec_event_cb(lv_event_t * e)
 		uint8_t index = *((uint8_t *)obj->user_data);
 		lv_spinbox_decrement(_taUI._mods[index]->_mObj);
 		sPara->params[index] = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
-		rt_kprintf("dec sPara->params[%d] = %ld\n", index, sPara->params[index]);
 		if(sPara->chipVal.scanState > State_In_ScanClose)
 			rt_sem_release(&param_Sem);
+		else{
+			M_DacChipOpr *pDacChip = GetMatchDacChip(g_tLaserManager.mod_dac, "dac_ad5541");
+			switch(index)
+			{
+				case ScanItem_bias:
+					pDacChip->_SetWaveFunc(pDacChip, ChipID_HvScan_Bias, HvFunc_Bias2RegVal(sPara->params[index]));	
+				break;
+				default:
+				break;
+			}			
+		}
     }
 }
 

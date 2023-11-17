@@ -15,7 +15,7 @@ typedef struct _GpioxInfo
 typedef struct _DacChipOpr
 {
 	char *name; 	  
-	void (*_SetWaveFunc)(struct _DacChipOpr *, unsigned char);			  
+	void (*_SetWaveFunc)(struct _DacChipOpr *, unsigned char, uint16_t);			  
 #ifdef RT_USING_RTOS_DRIVER
 	struct rt_spi_device *spiDevice;
 #else

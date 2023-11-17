@@ -160,14 +160,6 @@ static void MX_Spi3Bus_Init(M_GpioxInfo *CsPinPool, uint8_t csNum)
 
 #endif
 
-
-
-static void HW_Ad5541SetWave(M_DacChipOpr *pDacChip, uint8_t chipID)
-{
-	rt_kprintf("HW_Ad5541SetWave \n");
-}
-
-
 static void HW_AD5541Write(M_DacChipOpr *pDacChip, uint8_t chipID, uint16_t data)
 {
 #ifdef RT_SPI3_USING_RTOS_DRIVER
@@ -179,6 +171,14 @@ static void HW_AD5541Write(M_DacChipOpr *pDacChip, uint8_t chipID, uint16_t data
 	HAL_GPIO_WritePin((GPIO_TypeDef* )pCsPin->pGPIOx, pCsPin->Gpio_Pin, (GPIO_PinState)GPIO_PIN_SET); 
 #endif
 }
+
+static void HW_Ad5541SetWave(M_DacChipOpr *pDacChip, uint8_t chipID, uint16_t data)
+{
+	HW_AD5541Write(pDacChip, chipID, data);
+}
+
+
+
 
 
 

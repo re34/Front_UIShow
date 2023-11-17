@@ -45,14 +45,23 @@ typedef enum
 
 
 
-#ifdef USING_HVPZT_SCAN
+#if defined(USING_HVPZT_SCAN)
+
 typedef enum
 {
   ChipID_HvScan_Amp = 0,		//幅值 （最大值-最小值）
   ChipID_HvScan_Bias = 1,	    //偏置
   ChipID_HvScan_DecBias = 2,	//扫描拉回偏置
 } E_ChipID;
-  
+
+
+
+/* 由高压PZT幅值(mV)转换成芯片寄存器值 */
+extern uint16_t HvFunc_Amp2RegVal(const long mvData);
+/* 由高压PZT偏置值(mV)转换成芯片寄存器值 */
+extern uint16_t HvFunc_Bias2RegVal(const long mvData);
+
+
 #endif
 
 extern uint8_t covNums;
