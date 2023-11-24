@@ -1,0 +1,18 @@
+#ifndef __CONFIG_SMALL_MODBUS_H__
+#define __CONFIG_SMALL_MODBUS_H__
+
+/*
+*RTTHREAD PORT
+*/
+#define SMALL_MODBUS_RTTHREAD 			   1
+#define SMALL_MODBUS_RTTHREAD_USE_DEVICE   1
+#define SMALL_MODBUS_RTTHREAD_USE_SOCKET   0
+
+#if SMALL_MODBUS_RTTHREAD
+#include "small_modbus_port_rtthread.h"
+#endif
+
+
+#define SMALL_MODBUS_CRC_BYTE_SWAP 0
+
+#endif /* __CONFIG_SMALL_MODBUS_H__ */
