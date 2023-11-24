@@ -1,0 +1,32 @@
+[
+ {
+  "path": "/packages/iot/ota_downloader", 
+  "ver": "latest", 
+  "name": "OTA_DOWNLOADER"
+ }, 
+ {
+  "path": "/packages/multimedia/LVGL/LVGL", 
+  "ver": "v8.3-latest", 
+  "name": "LVGL"
+ }, 
+ {
+  "path": "/packages/system/fal", 
+  "ver": "latest", 
+  "name": "FAL"
+ }, 
+ {
+  "path": "/packages/system/minIni", 
+  "ver": "v1.2.0", 
+  "name": "MININI"
+ }, 
+ {
+  "path": "/packages/peripherals/touch/gt9147", 
+  "ver": "v1.1.0", 
+  "name": "GT9147"
+ }, 
+ {
+  "path": "/packages/peripherals/pcf8574", 
+  "ver": "latest", 
+  "name": "PCF8574"
+ }
+]
