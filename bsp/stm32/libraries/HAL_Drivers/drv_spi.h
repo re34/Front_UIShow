@@ -17,7 +17,11 @@
 #include <drv_common.h>
 #include "drv_dma.h"
 
-rt_err_t rt_hw_spi_device_attach(const char *bus_name, const char *device_name, GPIO_TypeDef* cs_gpiox, uint16_t cs_gpio_pin);
+rt_err_t rt_hw_spics_device_attach(const char *bus_name, const char *device_name, rt_base_t cs_pin, void *user_data);
+
+typedef void (*DevicePriFunc)(void *);
+
+
 
 struct stm32_hw_spi_cs
 {

@@ -83,7 +83,7 @@ static M_GpioxInfo g_tDdsCsPinPool[2] =
 };
 
 
-static void MX_Spi2Bus_Init(M_GpioxInfo *CsPinPool)
+static void MX_Spi2Bus_Init(M_GpioxInfo *CsPinPool, uint8_t csNum)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitTypeDef CS_InitStruct = {0};
@@ -112,7 +112,7 @@ static void MX_Spi2Bus_Init(M_GpioxInfo *CsPinPool)
 	CS_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	CS_InitStruct.Pull = GPIO_PULLUP;
 	CS_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	for(int i = 0; i < 2; i++)
+	for(int i = 0; i < csNum; i++)
 	{
 	    CS_InitStruct.Pin = CsPinPool[i].Gpio_Pin;
 	    HAL_GPIO_Init((GPIO_TypeDef *)CsPinPool[i].pGPIOx, &CS_InitStruct);
@@ -225,8 +225,7 @@ M_DacChipOpr *HW_Ad9833Register(void *argv)
 	}
 #else
 	mod_dds->tAllCsPin = &g_tDdsCsPinPool[0];
-    MX_Spi2Bus_Init(mod_dds->tAllCsPin);
-
+	MX_Spi2Bus_Init(mod_dds->tAllCsPin, sizeof(g_tDdsCsPinPool) / sizeof(g_tDdsCsPinPool[0]));
 #endif
 	/*********************
 	*二. public数据赋值
@@ -304,7 +303,6 @@ static void Msh_SetAd9833(int argc, char **argv)
 	pData->freq_sfr = iFreqInx;
 	pData->phase_sfr = iPhaseInx;
 	pData->chipID = chipID;
-
 	pDacChip->_SetWaveFunc(pDacChip, chipID);
 }
 MSH_CMD_EXPORT(Msh_SetAd9833, operate sample: Msh_SetAd9833(freq) | (freq_sfr) |(wave sin / tri / squ) | (phase) | (phase_sfr) >);

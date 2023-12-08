@@ -26,6 +26,8 @@ struct rt_device_pin
     const struct rt_pin_ops *ops;
 };
 
+#define PIN_NONE                (-1)
+
 #define PIN_LOW                 0x00
 #define PIN_HIGH                0x01
 

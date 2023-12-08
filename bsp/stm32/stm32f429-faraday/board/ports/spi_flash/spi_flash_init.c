@@ -18,6 +18,7 @@
 #if defined(BSP_USING_SPI_FLASH)
 
 #define W25Q_SPI_DEVICE_NAME     "spi50"
+#define SPI_FLASH_CS_PIN			GET_PIN(F, 6)
 
 static void spi_w25q_sample(int argc, char *argv[])
 {
@@ -112,8 +113,7 @@ MSH_CMD_EXPORT(spi_w25q_sf_sample, spi w25q sf sample);
 static int rt_hw_spi_flash_init(void)
 {
     __HAL_RCC_GPIOF_CLK_ENABLE();
-    rt_hw_spi_device_attach("spi5", W25Q_SPI_DEVICE_NAME, GPIOF, GPIO_PIN_6);
-
+    rt_hw_spics_device_attach("spi5", W25Q_SPI_DEVICE_NAME, SPI_FLASH_CS_PIN, RT_NULL);
     if (RT_NULL == rt_sfud_flash_probe("W25Q256", W25Q_SPI_DEVICE_NAME))
     {
         return -RT_ERROR;

@@ -4,9 +4,10 @@
 
 #include "lvgl.h"
 #include "ui_utils.h"
-//串口3    rts PH8
-//#define RS485_RST_PIN    GET_PIN(H, 8)
 
+
+
+#if defined(RT_USING_USER_TRANSPORT)
 
 //串口2    rts PA1
 #define RS485_RTS_PIN    GET_PIN(A, 1)
@@ -18,6 +19,7 @@ rt_mq_t uart_mq = RT_NULL;
 static uint16_t temp_buff[128];
 
 struct rt_semaphore g_tErrSem;
+
 
 
 Modbus_Date ui_sample[MAX_SAMPLE_NUM];
@@ -78,6 +80,7 @@ static void trans_modbus_poll_thread(void *param)
 		if(RT_EOK == uwRet)
 		{
 			uint8_t type;
+			//选定指定串口
 			if(r_msgCode.i_msgType <= E_Modbus_Read){
 				smb_master = (small_modbus_t *)param;
 			}else{
@@ -87,7 +90,7 @@ static void trans_modbus_poll_thread(void *param)
 			modbus_set_slave(smb_master, 1);
 
 			switch(r_msgCode.i_msgType)
-			{
+			{			
 				case E_Modbus_Read:
 				{
 					type = TYPE_SAMPLE_DATA;
@@ -97,7 +100,7 @@ static void trans_modbus_poll_thread(void *param)
 					if (uwRet >= MODBUS_OK)
 					{										
 						modbus_assign_data(type, r_msgCode.i_regNum, temp_buff);
-						//配置类数据刷新
+						//配置类数据刷新， 通知lvgl定时器任务
 						if(type == TYPE_CFG_DATA)
 						{
 							rt_sem_release(&g_tErrSem);	
@@ -119,7 +122,7 @@ static void trans_modbus_poll_thread(void *param)
 					if (uwRet >= MODBUS_OK)
 					{										
 						modbus_assign_data(type, r_msgCode.i_regNum, temp_buff);
-						//配置类数据刷新
+						//配置类数据刷新， 通知lvgl定时器任务
 						if(type == TYPE_TA_CFG_DATA)
 						{
 							rt_sem_release(&g_tErrSem);	
@@ -164,15 +167,11 @@ static int uart_rts(int on)
 }
 
 
-int modbus_Initial(small_modbus_t *smb_master, bool enable485)
+int modbus_Initial(small_modbus_t *smb_master, const char *uart_name, bool enable485)
 {
 	
 	struct serial_configure serial_config;
-	//init modbus
-	if(enable485  == false)
-		modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(LD_UART_NAME)); 
-	else
-		modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(TA_UART_NAME)); 		
+	modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(uart_name)); 		
 	serial_config.baud_rate = BAUD_RATE_19200;
 	serial_config.data_bits = DATA_BITS_8;
 	serial_config.stop_bits = STOP_BITS_1;
@@ -202,13 +201,13 @@ void trans_modbusInit(void)
 	/*****************************************
 	*1. 初始化2个串口
 	******************************************/	
-	ret = modbus_Initial(&_rtu_master[0], false);
+	ret = modbus_Initial(&_rtu_master[0], LD_UART_NAME, false);
 	if(ret != MODBUS_OK)
 	{
 		rt_kprintf("init modbus failed!\n");
 		return;
 	}
-	ret = modbus_Initial(&_rtu_master[1], true);
+	ret = modbus_Initial(&_rtu_master[1], TA_UART_NAME, false);
 	if(ret != MODBUS_OK)
 	{
 		rt_kprintf("init modbus failed!\n");
@@ -248,5 +247,5 @@ void trans_modbusInit(void)
 
 }
 
-
+#endif
 

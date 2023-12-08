@@ -53,6 +53,7 @@ typedef enum
 	Wave_Type_Null = 0xFF,
 } E_WaveTypeSelect;
 
+#endif
 
 
 typedef struct
@@ -66,7 +67,7 @@ typedef struct
 } M_Ad9833Para;
 
 
-#endif
+
 
 #endif
 

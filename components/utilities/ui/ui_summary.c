@@ -1,7 +1,12 @@
+#if defined(UI_USING_PAGE_SETTING)
 #include "ui_utils.h"
+
+#if defined(RT_USING_USER_TRANSPORT)
 #include "mod_trans.h"
+#endif
 
 //extern int dbg_printf(const char *fmt, ...);
+
 
 #define TOP_WITH			480
 #define TOP_HEIGHT			120
@@ -108,8 +113,7 @@ void Info_TaskUpdate(lv_timer_t* timer)
 {
 	if(RT_EOK == rt_sem_trytake(&g_tErrSem))
 	{
-		int i;	
-		rt_kprintf("tv_flush_thread \n");
+		int i;
 		for(i = 0; i < PARAM_ITEM_NUMS_END; i++)
 		{
 			spinbox_flush_val(_settingUI._mods[i]->_mObj, ui_cfgVal[1 + i].recvDate);
@@ -507,5 +511,5 @@ void sample_tile_exit(void)
 	lv_obj_del(ui_Dialog.cont);
 	ui_Dialog.cont = NULL;
 }
-
+#endif
 

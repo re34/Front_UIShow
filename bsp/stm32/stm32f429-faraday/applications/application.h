@@ -1,7 +1,7 @@
 #ifndef __APPLICATION_H
 #define __APPLICATION_H
 
-//#include "mod_dac.h"
+#include "mod_dac.h"
 #include "mod_input.h"
 #include "utils_list.h"
 
@@ -16,7 +16,7 @@ enum {
 };
 
 typedef struct {
-   //M_DacChipOpr		*mod_dac;	
+   M_DacChipOpr		*mod_dac;	
    M_listObject		*mod_InputList;	
 }MOD_INSERT;
 

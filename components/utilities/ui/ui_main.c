@@ -14,7 +14,7 @@ const char* app_names_symbol[] = {
 };
 
 const char* app_names[] = {
-    "TA Setting","Summary","LD Setting",
+    "System Setting","Summary","LD Setting",
 };
 
 
@@ -137,12 +137,14 @@ static void ui_MenuEventCb(lv_event_t *e)
 		if (LV_KEY_USER_OK == key)
 		{
 			lv_indev_wait_release(lv_indev_get_act());
-			if(app_index != PAGE_SUMMARY)	//其余2个编号的app未开放
+#if defined(UI_USING_PAGE_PARAM) || defined(UI_USING_PAGE_SETTING)
+			if(app_index == PAGE_PARAM)	//其余2个编号的app未开放
 			{
 				anim_reback = 1;
 				lv_anim_timeline_set_reverse(anim_timeline, anim_reback);
 				lv_anim_timeline_start(anim_timeline);
 			}
+#endif
 		}else{
 			last_inx = app_index;
 	        if (LV_KEY_RIGHT == key) {
@@ -177,7 +179,8 @@ static void ui_MenuEventCb(lv_event_t *e)
 			menu_bar->title_set(app_names[app_index]);
 			ui_switch_focus(last_inx, app_index);
 		}else{
-			if(app_index != PAGE_SUMMARY)  //PAGE_SUMMARY app未开放
+#if defined(UI_USING_PAGE_PARAM) || defined(UI_USING_PAGE_SETTING)
+			if(app_index == PAGE_PARAM)  //PAGE_SUMMARY app未开放
 			{
 				//禁止触屏，防止动画过程中误触情况发生
 				lv_indev_enable(ts_indev_obj, false);
@@ -185,6 +188,7 @@ static void ui_MenuEventCb(lv_event_t *e)
 				lv_anim_timeline_set_reverse(anim_timeline, anim_reback);
 				lv_anim_timeline_start(anim_timeline);
 			}
+#endif
 		}
 
 	}
@@ -261,7 +265,9 @@ void Gui_mainInit(lv_obj_t *root)
 	menu_bar->state_set(CMD_CTRL_BAR, 1);
 	menu_bar->title_set(app_names[app_index]);
 	//登录框
+#if defined(UI_USING_FUNC_LOGIN)	
 	Gui_loginInit();
+#endif
 }
 
 
@@ -273,7 +279,9 @@ void Gui_mainExit(lv_obj_t *root)
 	for (uint8_t i = 0; i < sizeof(icons) / sizeof(icons[0]); i++) {
 		lv_obj_del(icons[i]);
 	}
+#if defined(UI_USING_FUNC_LOGIN)	
 	Gui_loginExit();
+#endif
 }
 
 

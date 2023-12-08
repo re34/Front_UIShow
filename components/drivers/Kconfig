@@ -250,6 +250,12 @@ config RT_USING_SPI
             bool "Using SPI interface DAC Chip AD5541(add by wzlxy)"
 			select RT_USING_DAC_DEV
             default n
+			
+	    if RT_USING_AD5541
+                config USING_HVPZT_SCAN
+                bool "Using HVPZT Controller"
+                default n			
+	    endif
 
         config RT_USING_AD9833
             bool "Using SPI interface DDS Chip AD9833(add by wzlxy)"
