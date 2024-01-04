@@ -228,7 +228,6 @@ void Task_ScanOrReadProc(void* parameter)
 		uwRet = rt_sem_take(&scanSw_Sem, RT_WAITING_FOREVER);
 		if(RT_EOK == uwRet && s_Para->chipVal.scanState)
 		{
-			rt_kprintf("receive scanSw_Sem, bias=%d, amp=%d\n",s_Para->chipVal.bias,s_Para->chipVal.scanAmplitude);
 			i32PztRegBias = HvFunc_Bias2RegVal(s_Para->chipVal.bias);
 			i32PztRegAmp = HvFunc_Amp2RegVal(s_Para->chipVal.scanAmplitude);
 			HW_AD5541Write(pDacChip, ChipID_HvScan_Bias, i32PztRegBias);
@@ -237,22 +236,27 @@ void Task_ScanOrReadProc(void* parameter)
 			yStepLen = i32PztRegAmp * s_Para->chipVal.scanFreq / 10000 + 1;
 			while(1)
 			{
+				int32_t tmpval;
 				if(RT_EOK == rt_sem_trytake(&param_Sem)) //参数发生变化
 				{
 					if(s_Para->chipVal.scanState == State_In_ScanClose)
 					{
 						//退出当前循环
+						for (tmpval = 0; tmpval <= (i32PztRegAmp / 2); tmpval += yStepLen)
+						{
+							HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, tmpval);
+							rt_hw_us_delay(42);
+						}
 						break;
 					}
 					i32PztRegBias = HvFunc_Bias2RegVal(s_Para->chipVal.bias);
 					i32PztRegAmp = HvFunc_Amp2RegVal(s_Para->chipVal.scanAmplitude);
 					HW_AD5541Write(pDacChip, ChipID_HvScan_Bias, i32PztRegBias);
 					HW_AD5541Write(pDacChip, ChipID_HvScan_DecBias, (i32PztRegAmp + 1) / 2);
-					HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, 0);
 					//计算步进值 = 幅值/ 需要描点的数量
 					yStepLen = i32PztRegAmp * s_Para->chipVal.scanFreq / 10000 + 1;
 				}
-				int32_t tmpval;
+
 			    for (tmpval = 0; tmpval <= i32PztRegAmp; tmpval += yStepLen)
 			    {
 			        HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, tmpval);

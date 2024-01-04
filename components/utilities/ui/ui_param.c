@@ -394,7 +394,9 @@ static void btn_Switch_cb(lv_event_t* event)
 			//关闭继电器(红色)
 			_taUI.opts &= ~(1 << bit_PowerSw);
 			lv_obj_set_style_bg_color(event->target, lv_color_hex(0xd74047), LV_PART_MAIN);
-		}	
+		}
+		//开关电流都降为0
+		lv_spinbox_set_value(_taUI._mods[0]->_mObj, 0);
 		Gui_SendMessge(uart_mq, MODBUS_TA_OPTS_ADDR, 2, E_Modbus_TA_Write, _taUI.opts);
 	}	
 }
@@ -412,7 +414,7 @@ void TA_TaskUpdate(lv_timer_t* timer)
 		}
 		_taUI.opts = ui_taVal[TA_SAMPLE_ADDR - 1].recvDate;
 		lv_obj_t *sw_btn = (lv_obj_t *)timer->user_data;
-		//激光器电源
+		//更新激光器电源初始化状态
 		if(_taUI.opts & (1 << bit_PowerSw))
 			lv_obj_set_style_bg_color(sw_btn, lv_color_hex(0x4ab3b0), LV_PART_MAIN);
 		else
@@ -464,56 +466,27 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_size(tvcont, 240, 190);
 	lv_obj_align(tvcont, LV_ALIGN_TOP_MID, 0, 0);	
 	lv_obj_set_scrollbar_mode(tvcont, LV_SCROLLBAR_MODE_OFF);
+
 	/*************************************************************************
-	* 1. 电流设置区(分页1)
-	**************************************************************************/
-    lv_obj_t* current_tile = lv_tileview_add_tile(tvcont, 0, 0, LV_DIR_RIGHT);
-	lv_obj_set_flex_flow(current_tile, LV_FLEX_FLOW_COLUMN);
-	lv_obj_set_style_pad_hor(current_tile, 8, LV_PART_MAIN);
-	lv_obj_set_style_pad_row(current_tile, 0, LV_PART_MAIN);
-	for(;i < TA_I_NUMS_END; i++)
-	{
-    	_taUI._mods[i] = TA_SubCreate(current_tile, i); 
-	}
-	/*************************************************************************
-	* 2. 温度设置区(分页2)
-	**************************************************************************/	
-  	lv_obj_t* temper_tile = lv_tileview_add_tile(tvcont, 1, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
-	lv_obj_set_flex_flow(temper_tile, LV_FLEX_FLOW_COLUMN);
-	lv_obj_set_style_pad_hor(temper_tile, 8, LV_PART_MAIN);
-	lv_obj_set_style_pad_row(temper_tile, 0, LV_PART_MAIN);
-	for(;i < TA_T_NUMS_END; i++)
-	{
-    	_taUI._mods[i] = TA_SubCreate(temper_tile, i);
-	}
-	/*************************************************************************
-	* 3. 高压PZT设置区(分页3)
-	**************************************************************************/	
-  	lv_obj_t* hvPzt_tile = lv_tileview_add_tile(tvcont, 2, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
-	lv_obj_set_flex_flow(hvPzt_tile, LV_FLEX_FLOW_COLUMN);
-	lv_obj_set_style_pad_hor(hvPzt_tile, 8, LV_PART_MAIN);
-	lv_obj_set_style_pad_row(hvPzt_tile, 0, LV_PART_MAIN);
-	for(;i < TA_HvPzt_NUMS_END; i++)
-	{
-    	_taUI._mods[i] = TA_SubCreate(hvPzt_tile, i);
-	}	
-	/*************************************************************************
-	* 4. 保存设置区(分页4)
+	* 1. 保存设置区(分页1)
 	**************************************************************************/		
-  	lv_obj_t *other_tile = lv_tileview_add_tile(tvcont, 3, 0, LV_DIR_LEFT);
-	//板内集成高压扫描模块，不需要通讯，默认退出配置界面就关闭
+  	lv_obj_t *other_tile = lv_tileview_add_tile(tvcont, 0, 0, LV_DIR_RIGHT);
+	/*************************************************************
+	* 板内集成高压扫描模块，不需要通讯，默认退出配置界面就关闭
+	**************************************************************/
+	//扫描按钮
 	lv_obj_t *HvPzt_btn = lv_btn_create(other_tile);
 	lv_obj_set_size(HvPzt_btn, 60, 50);
 	lv_obj_set_style_text_font(HvPzt_btn, &font_symbol_32,  LV_PART_MAIN);
 	lv_obj_set_style_bg_img_src(HvPzt_btn, MY_SYMBOL_SUMMARY, 0);
-	//默认是关闭状态（红色）
+	//每次退出界面均关闭扫描，所以默认是关闭状态（红色）
 	lv_obj_set_style_bg_color(HvPzt_btn, lv_color_hex(0xd74047), LV_PART_MAIN);
 	lv_obj_set_style_radius(HvPzt_btn, 20, LV_PART_MAIN);
 	lv_obj_add_event_cb(HvPzt_btn, btn_HvPzt_cb, LV_EVENT_CLICKED, (void *)&_g_ParasPool._uScanPara);
 	lv_obj_add_event_cb(HvPzt_btn, btn_HvPzt_cb, LV_EVENT_VALUE_CHANGED, (void *)&_g_ParasPool._uScanPara);
 	lv_obj_align(HvPzt_btn, LV_ALIGN_TOP_MID, -40, 30);
 	_taUI.scanBtn = HvPzt_btn;
-
+	//电源按钮
 	lv_obj_t *sw_btn = lv_btn_create(other_tile);
 	lv_obj_set_size(sw_btn, 60, 50);
 	lv_obj_set_style_text_font(sw_btn, &font_symbol_20,  LV_PART_MAIN);
@@ -521,7 +494,7 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_style_radius(sw_btn, 20, LV_PART_MAIN);
 	lv_obj_add_event_cb(sw_btn, btn_Switch_cb, LV_EVENT_CLICKED, NULL);
 	lv_obj_align(sw_btn, LV_ALIGN_TOP_MID, 40, 30);
-
+	//保存按钮
 	lv_obj_t * save_btn = lv_btn_create(other_tile);
 	lv_obj_set_size(save_btn, 60, 50);
 	lv_obj_set_style_text_font(save_btn, &font_symbol_32,  LV_PART_MAIN);
@@ -529,16 +502,49 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_style_radius(save_btn, 20, LV_PART_MAIN);
 	lv_obj_add_event_cb(save_btn, btn_save_cb, LV_EVENT_CLICKED, NULL);
 	lv_obj_align(save_btn, LV_ALIGN_BOTTOM_MID, -40, -30);
-	
+	//离开按钮
 	lv_obj_t * Exit_btn = lv_btn_create(other_tile);
 	lv_obj_set_size(Exit_btn, 60, 50);
 	lv_obj_set_style_text_font(Exit_btn, &font_symbol_32,  LV_PART_MAIN);
 	lv_obj_set_style_bg_img_src(Exit_btn, MY_SYMBOL_EXIT, 0);
 	lv_obj_set_style_radius(Exit_btn, 20, LV_PART_MAIN);	
 	lv_obj_add_event_cb(Exit_btn, btn_exit_cb, LV_EVENT_CLICKED, (void *)&_g_ParasPool._uScanPara);
-	lv_obj_align(Exit_btn, LV_ALIGN_BOTTOM_MID, 40, -30);
-	
-	lv_obj_set_tile(tvcont, current_tile, LV_ANIM_OFF);
+	lv_obj_align(Exit_btn, LV_ALIGN_BOTTOM_MID, 40, -30);	
+	/*************************************************************************
+	* 2. 高压PZT设置区(分页2)
+	**************************************************************************/	
+  	lv_obj_t* hvPzt_tile = lv_tileview_add_tile(tvcont, 1, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
+	lv_obj_set_flex_flow(hvPzt_tile, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_style_pad_hor(hvPzt_tile, 8, LV_PART_MAIN);
+	lv_obj_set_style_pad_row(hvPzt_tile, 0, LV_PART_MAIN);
+	for(i = TA_T_NUMS_END;i < TA_HvPzt_NUMS_END; i++)
+	{
+    	_taUI._mods[i] = TA_SubCreate(hvPzt_tile, i);
+	}	
+	/*************************************************************************
+	* 1. 电流设置区(分页3)
+	**************************************************************************/
+    lv_obj_t* current_tile = lv_tileview_add_tile(tvcont, 2, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
+	lv_obj_set_flex_flow(current_tile, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_style_pad_hor(current_tile, 8, LV_PART_MAIN);
+	lv_obj_set_style_pad_row(current_tile, 0, LV_PART_MAIN);
+	for(i = 0;i < TA_I_NUMS_END; i++)
+	{
+    	_taUI._mods[i] = TA_SubCreate(current_tile, i); 
+	}
+	/*************************************************************************
+	* 2. 温度设置区(分页4)
+	**************************************************************************/	
+  	lv_obj_t* temper_tile = lv_tileview_add_tile(tvcont, 3, 0, LV_DIR_LEFT);
+	lv_obj_set_flex_flow(temper_tile, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_style_pad_hor(temper_tile, 8, LV_PART_MAIN);
+	lv_obj_set_style_pad_row(temper_tile, 0, LV_PART_MAIN);
+	for(;i < TA_T_NUMS_END; i++)
+	{
+    	_taUI._mods[i] = TA_SubCreate(temper_tile, i);
+	}
+	//设置主页为分页1
+	lv_obj_set_tile(tvcont, other_tile, LV_ANIM_OFF);
 	/*************************************************************************
 	* 1. 分页器
 	**************************************************************************/
