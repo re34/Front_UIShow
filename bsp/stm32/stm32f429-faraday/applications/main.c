@@ -92,7 +92,7 @@ int main(void)
 	MOD_INSERT *ptLaser = &g_tLaserManager;
 
 	rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
-	rt_kprintf("Version: 4.0.9\r\n");
+	rt_kprintf("Version: 4.0.11\r\n");
 	
 #if defined(RT_USING_USER_PARA)
 	Get_SystemParam();

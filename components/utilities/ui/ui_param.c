@@ -21,9 +21,9 @@ struct _Ta_Setting _taUI;
 
 
 const char* Ta_list[TA_HvPzt_NUMS_END] = {
-	"电流设置(uA)",
-	"电流工作点(uA)",		
-	"电流告警值(uA)",	
+	"电流设置(mA)",
+	"电流工作点(mA)",		
+	"电流最大值(mA)",	
 	"温度设置(℃)",
 	"温度工作点(℃)",
 	"温度最小值(℃)",	
@@ -142,25 +142,28 @@ tab_module_t *TA_SubCreate(lv_obj_t * parent, uint8_t inx)
     {
 		t_tabBox->_attr.itemIndex = inx;
 		t_tabBox->_attr.range_min = 0;
+		//精确到小数点后3位
 		switch(inx)
 		{
 			case Item_I_user:
 			case Item_I_WorkPoint:
 			case Item_I_Max:
-				t_tabBox->_attr.bHasDot = false;
-				t_tabBox->_attr.range_max = 275000;
+				t_tabBox->_attr.bHasDot = true;
+				t_tabBox->_attr.range_max = 275000; 
 			break;
 			case Item_T_user:
 			case Item_T_WorkPoint:
 			case Item_T_Min:
 			case Item_T_Max:
 				t_tabBox->_attr.bHasDot = true;
-				t_tabBox->_attr.range_max = 60000;				
+				t_tabBox->_attr.range_max = 60000;		
 			break;
+			//最大100(V)
 			case ScanItem_bias:
 				t_tabBox->_attr.bHasDot = true;
 				t_tabBox->_attr.range_max = 100000;
 			break;
+			//最大50(V)			
 			case ScanItem_amp:
 				t_tabBox->_attr.bHasDot = true;
 				t_tabBox->_attr.range_min = 1000;
@@ -172,7 +175,7 @@ tab_module_t *TA_SubCreate(lv_obj_t * parent, uint8_t inx)
 				t_tabBox->_attr.range_max = 50;
 			break;
 		}		
-		//除高压PZT外都是通信, ui_taVal[0~6]
+		//除高压PZT配置项外都是通信, ui_taVal[0~6]
 		if(inx <= Item_T_Max) 
 			t_tabBox->_attr._initVal = ui_taVal[inx].recvDate;
 		else
@@ -578,7 +581,7 @@ void Gui_paramInit(lv_obj_t* root)
 	}
 	//翻页回调
 	lv_obj_add_event_cb(tvcont, tileview_load_event_cb, LV_EVENT_VALUE_CHANGED, (void *)tvBtn_cont);
-	//第一次发送，获取除了HVPZT外所有数据(电流+温度+options)
+	//第一次发送，获取除了HVPZT外所有数据(电流 + 温度 + options)
 	Gui_SendMessge(uart_mq, MODBUS_TA_CFG_ADDR, OPTIONS_NUMS_END * 2, E_Modbus_TA_Read, 0);
 	Gui_dialog_Create();
 	//modbus每1秒采集一次

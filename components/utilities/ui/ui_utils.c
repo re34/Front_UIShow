@@ -342,6 +342,7 @@ void spinContent_style_init(tab_module_t* t_objBox, const char **label_list, lv_
 	lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
 	//spinbox样式
     lv_spinbox_set_range(t_objBox->_mObj, p_attr->range_min, p_attr->range_max);
+	//数值可调范围：小数位后3位可调
 	if(p_attr->bHasDot){
 		lv_spinbox_set_digit_format(t_objBox->_mObj, 6, 3);
 		lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)p_attr->_initVal) / 1000);
