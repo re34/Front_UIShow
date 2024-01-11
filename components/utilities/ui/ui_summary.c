@@ -106,10 +106,10 @@ void sample_update(uint8_t lockState)
 
 void Info_TaskUpdate(lv_timer_t* timer)
 {
+	//刚进入app时的第一次数据交互
 	if(RT_EOK == rt_sem_trytake(&g_tErrSem))
 	{
-		int i;	
-		rt_kprintf("tv_flush_thread \n");
+		int i;
 		for(i = 0; i < PARAM_ITEM_NUMS_END; i++)
 		{
 			spinbox_flush_val(_settingUI._mods[i]->_mObj, ui_cfgVal[1 + i].recvDate);
@@ -118,6 +118,13 @@ void Info_TaskUpdate(lv_timer_t* timer)
 		{
 			sw_flush_val(_settingUI._mods_sw[i]->_mObj, i, ui_cfgVal[0].recvDate);
 		}
+		//刷新扫描开关
+		if(!(ui_cfgVal[0].recvDate & (1 << BIT_SCAN)))
+		{
+			lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);
+		}else{
+			lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0x3b67b0), LV_PART_MAIN);
+		}		
 		_settingUI.iSwitchs = ui_cfgVal[0].recvDate;
 		return;
 	}

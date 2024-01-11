@@ -315,7 +315,7 @@ void Gui_Style_Init(void)
 }
 
 
-void spinContent_style_init(tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb)
+void spinContent_style_init(uint8_t type, tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb)
 {
 	//初始化为空白对象(无边框)
 	char initStr[7];
@@ -331,16 +331,29 @@ void spinContent_style_init(tab_module_t* t_objBox, const char **label_list, lv_
 	lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
 	//spinbox样式
     lv_spinbox_set_range(t_objBox->_mObj, p_attr->range_min, p_attr->range_max);
-	if(p_attr->bHasDot){
-		lv_spinbox_set_digit_format(t_objBox->_mObj, 6, 3);
-		lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)p_attr->_initVal) / 1000);
-	}else{
-		if(p_attr->range_max <= 999)
-			lv_spinbox_set_digit_format(t_objBox->_mObj, 3, 3);
-		else
-			lv_spinbox_set_digit_format(t_objBox->_mObj, 7, 7);
-		lv_snprintf(initStr, sizeof(initStr), "%d", p_attr->_initVal);
-	}	
+	if(type == UI_Type_LD){
+		if(p_attr->bHasDot){
+			lv_spinbox_set_digit_format(t_objBox->_mObj, 6, 3);
+			lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)p_attr->_initVal) / 1000);
+		}else{
+			if(p_attr->range_max <= 999)
+				lv_spinbox_set_digit_format(t_objBox->_mObj, 3, 3);
+			else
+				lv_spinbox_set_digit_format(t_objBox->_mObj, 7, 7);
+			lv_snprintf(initStr, sizeof(initStr), "%d", p_attr->_initVal);
+		}
+	}
+	else{
+		if(p_attr->bHasDot)
+		{
+			lv_spinbox_set_digit_format(t_objBox->_mObj, 3, 2);
+			lv_snprintf(initStr, sizeof(initStr), "%.1f", ((float)p_attr->_initVal) / 10);
+
+		}else{
+			lv_spinbox_set_digit_format(t_objBox->_mObj, 4, 4);
+			lv_snprintf(initStr, sizeof(initStr), "%d", ((float)p_attr->_initVal) / 1000);
+		}
+	}
 	lv_spinbox_set_cursor_pos(t_objBox->_mObj, 0);
 	lv_obj_set_size(t_objBox->_mObj, 130, 45);
 	lv_textarea_set_align(t_objBox->_mObj, LV_TEXT_ALIGN_CENTER);

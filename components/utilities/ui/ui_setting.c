@@ -33,8 +33,8 @@ const char* label_list[PARAM_ITEM_NUMS_END] = {
 	"调制相位",
 	"调制频率(HZ)",
 /******************************/
-	"电流告警值(mA)",
-	"温度告警值(℃)",	
+	"电流最大值(mA)",
+	"温度最大值(℃)",	
 	"扫描电流(mA)",
 	"自动锁峰尖识别值",
 	"电流工作点(mA)",
@@ -51,7 +51,6 @@ const char* Switch_list[RELAY_NUMS] = {
 	"115",
 	"116",
 	"开关7",
-	"扫描开关",
 };
 
 const char *btn_names[2] = {
@@ -216,7 +215,7 @@ static void spinbox_event_cb(lv_event_t * e)
 
 void spinBox_style_init(tab_module_t* t_objBox)
 {
-	spinContent_style_init(t_objBox, &label_list[0], spinbox_event_cb);
+	spinContent_style_init(UI_Type_LD, t_objBox, &label_list[0], spinbox_event_cb);
 	
 	lv_obj_t * btn = spinBtn_style_init(t_objBox, lv_spinbox_inc_event_cb);
 	lv_obj_align_to(btn, t_objBox->_mObj, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
@@ -458,7 +457,7 @@ static void switchLock_event_cb(lv_event_t *e)
 				/************************
 				*4. 打开扫描
 				************************/
-				lv_obj_add_state(_settingUI._mods_sw[BIT_SCAN]->_mObj, LV_STATE_CHECKED);
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0x3b67b0), LV_PART_MAIN);
 				/************************
 				*5. 调整动画值
 				************************/
@@ -477,7 +476,7 @@ static void switchLock_event_cb(lv_event_t *e)
 				************************/				
 				p_attr->_initVal = Lock_Proc_handling;
 				_settingUI.iSwitchs &= ~(1 << BIT_SCAN);
-				lv_obj_clear_state(_settingUI._mods_sw[BIT_SCAN]->_mObj, LV_STATE_CHECKED);			
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);		
 			}
 			Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
 			lv_anim_start(&_settingUI._mods_sp[p_attr->itemIndex]->anim);	
@@ -646,16 +645,27 @@ static void btnUnlock_event_cb(lv_event_t* e)
 }
 
 /***************************************************************
-* 自动找峰---待测试
+* 扫描开关
 *****************************************************************/
-static void btnAutoSearch_event_cb(lv_event_t* e)
+static void btnPztScan_event_cb(lv_event_t* e)
 {
 	if(e->code == LV_EVENT_CLICKED)
 	{
-		//for test
-		//Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_AUTO_SEARCH));
+		if(!(_settingUI.iSwitchs & (1 << BIT_SCAN)))
+		{
+			//打开扫描
+			_settingUI.iSwitchs |= (1 << BIT_SCAN);
+			lv_obj_set_style_bg_color(e->target, lv_color_hex(0x3b67b0), LV_PART_MAIN);
+		}else{
+			//关闭扫描
+			_settingUI.iSwitchs &= ~(1 << BIT_SCAN);
+			lv_obj_set_style_bg_color(e->target, lv_color_hex(0xd74047), LV_PART_MAIN);
+		}
+		Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
 	}
+
 }
+
 
 
 
@@ -668,8 +678,12 @@ void Func_ManualBtnInit(lv_obj_t *parent, uint8_t index)
 		lv_obj_add_event_cb(cont, btnUnlock_event_cb, LV_EVENT_CLICKED, NULL);
 	}
 	else{
+		_settingUI._ScanObj = cont;
 		lv_obj_align(cont, LV_ALIGN_BOTTOM_RIGHT, -10, 0);
-		lv_obj_add_event_cb(cont, btnAutoSearch_event_cb, LV_EVENT_CLICKED, NULL);
+		lv_obj_add_event_cb(cont, btnPztScan_event_cb, LV_EVENT_CLICKED, NULL);
+		//更新扫描初始化状态
+		if(!(_settingUI.iSwitchs & (1 << BIT_SCAN)))
+			lv_obj_set_style_bg_color(cont, lv_color_hex(0xd74047), LV_PART_MAIN);	
 	}
 	lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);

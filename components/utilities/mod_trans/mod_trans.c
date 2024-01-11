@@ -104,7 +104,6 @@ static void trans_modbus_poll_thread(void *param)
 						}						
 					}else{
 						//配置类数据错误重发
-						//rt_kprintf("resend: %s\n", (type == TYPE_CFG_DATA)? "config_val":"sample_val");
 						if(type == TYPE_CFG_DATA)
 							Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);					
 					}
@@ -126,7 +125,6 @@ static void trans_modbus_poll_thread(void *param)
 						}						
 					}else{
 						//配置类数据错误重发
-						//rt_kprintf("resend: %s\n", (type == TYPE_TA_CFG_DATA)? "TA_config_val":"TA_sample_val");
 						if(type == TYPE_TA_CFG_DATA)
 							Gui_SendMessge(uart_mq, MODBUS_TA_CFG_ADDR, TA_T_NUMS_END * 2, E_Modbus_TA_Read, 0);
 					}

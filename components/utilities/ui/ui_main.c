@@ -91,6 +91,7 @@ void anim_FinishCb(lv_anim_t *a)
 			app_locate[app_index].objId = lv_obj_get_index(icons[app_index]);
 			app_locate[0].objId = lv_obj_get_index(icons[0]);
         }
+		lv_indev_enable(ts_indev_obj, true);
     }
 	else{
 		//隐藏工具条
@@ -255,6 +256,7 @@ void Gui_mainInit(lv_obj_t *root)
 	lv_obj_add_event_cb(root, ui_MenuEventCb, LV_EVENT_FOCUSED, NULL);
 	//加入到旋转编码器
 	Gui_AddToIndevGroup(root);
+	lv_indev_enable(ts_indev_obj, false);
 	//添加状态栏
 	if(menu_bar == NULL)
 		menu_bar = ui_bar_instance();

@@ -89,7 +89,7 @@
 //LD参数数量
 #define DEVELOP_ITEM_NUMS_END 			7     //常用参数数量
 #define PARAM_ITEM_NUMS_END				15	  //其他参数数量
-#define RELAY_NUMS 						8	  //开关继电器数量
+#define RELAY_NUMS 						7	  //开关继电器数量
 
 #define DATA_OFFSET						6	  //采集(副)与采集（主）数组偏移
 #define ALARM_OFFSET					7	  //
@@ -114,6 +114,12 @@ enum PAGE_ID
 	PAGE_SETTING = 2,
 	PAGE_BOOT,
 	PAGE_MAIN,
+};
+
+enum E_UI_Type
+{
+	UI_Type_TA	= 0,
+	UI_Type_LD	= 1,
 };
 
 enum E_LockProc
@@ -324,6 +330,7 @@ struct _ui_Setting
 	struct _tab_module  *_mods[PARAM_ITEM_NUMS_END];
 	struct _tab_module  *_mods_sw[RELAY_NUMS];
 	struct _sw_module  	*_mods_sp[2];
+	lv_obj_t *_ScanObj;
 	viewInfo_t labelGrp[3];
 	uint32_t iSwitchs;
 };
@@ -376,12 +383,14 @@ extern lv_style_t style_Window;
 
 
 //开机logo字体
+LV_FONT_DECLARE(font_Atlantico_22)
+//采集显示界面字体
 LV_FONT_DECLARE(font_tw_15)
 //采集显示界面字体
 LV_FONT_DECLARE(font_bahnschrift_17)
 LV_FONT_DECLARE(font_bahnschrift_13)
 LV_FONT_DECLARE(font_bahnschrift_35)
-LV_FONT_DECLARE(font_Atlantico_22)
+
 //设置界面字体
 LV_FONT_DECLARE(font_symbol_20)
 //主界面字体
@@ -440,8 +449,7 @@ extern void sample_tile_init(lv_obj_t* root);
 extern void sample_tile_exit(void);
 extern void Gui_dialog_Create(void);
 extern void Gui_menuInit(void);
-
-extern void spinContent_style_init(tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb);
+extern void spinContent_style_init(uint8_t type, tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb);
 extern lv_obj_t *spinBtn_style_init(tab_module_t* t_objBox, lv_event_cb_t event_cb);
 
 #endif

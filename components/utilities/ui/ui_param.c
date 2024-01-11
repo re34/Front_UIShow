@@ -7,9 +7,9 @@ struct _Ta_Setting _taUI;
 #include "ui_utils.h"
 
 const char* Ta_list[TA_T_NUMS_END] = {
-    "电流设置(uA)",
-	"电流工作点(uA)",		
-	"电流告警值(uA)",	
+    "电流设置(mA)",
+	"电流工作点(mA)",		
+	"电流最大值(mA)",	
 	"温度设置(℃)",
 	"温度工作点(℃)",
 	"温度最小值(℃)",	
@@ -68,7 +68,7 @@ static void parambox_event_cb(lv_event_t * e)
 
 void paramBox_style_init(tab_module_t* t_objBox)
 {
-	spinContent_style_init(t_objBox, &Ta_list[0], parambox_event_cb);
+	spinContent_style_init(UI_Type_TA, t_objBox, &Ta_list[0], parambox_event_cb);
 	
 	lv_obj_t * btn = spinBtn_style_init(t_objBox, param_inc_event_cb);
 	lv_obj_align_to(btn, t_objBox->_mObj, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
@@ -87,12 +87,13 @@ tab_module_t *TA_SubCreate(lv_obj_t * parent, uint8_t inx)
     {
 		t_tabBox->_attr.itemIndex = inx;
 		t_tabBox->_attr.range_min = 0;
+		t_tabBox->_attr.bHasDot = true;
 		if(inx >= TA_I_NUMS_END){
 			t_tabBox->_attr.bHasDot = true;
-			t_tabBox->_attr.range_max = 999999;
+			t_tabBox->_attr.range_max = 999; //最大值显示99.9℃
 		}else{
 			t_tabBox->_attr.bHasDot = false;
-			t_tabBox->_attr.range_max = 5000000;
+			t_tabBox->_attr.range_max = 5000; //最大值显示5000mA
 		}
 		t_tabBox->_attr._initVal = ui_taVal[inx].recvDate; //初始化值ui_taVal[0~6]
         t_tabBox->_root = lv_obj_create(parent);	
@@ -193,7 +194,7 @@ void viewBar_Update(viewInfo_t *info, uint8_t index)
 	int32_t warnVal_Min = 0;
 	int ret = 0;
 	//更新进度条
-	lv_bar_set_value(info->Bar_Main, (index > 1)?(tmp / 1000):(tmp / 1000000), LV_ANIM_ON);
+	lv_bar_set_value(info->Bar_Main, (index > 1)?(tmp / 10):(tmp / 1000), LV_ANIM_ON);
 	switch(index)
 	{
 		case Item_Ta_Sample_I:	//采样电流
@@ -219,7 +220,7 @@ void viewBar_Update(viewInfo_t *info, uint8_t index)
 	//if(ret < 0)
 	//	lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
 	//else
-		lv_label_set_text_fmt(info->Bar_icon, "%.2f", (index > 1)?((float)tmp / 1000):((float)tmp / 1000000));
+		lv_label_set_text_fmt(info->Bar_icon, "%.2f", (index > 1)?((float)tmp / 10):((float)tmp / 1000));
 }
 
 
@@ -253,7 +254,6 @@ void TA_TaskUpdate(lv_timer_t* timer)
 
 	if(RT_EOK == rt_sem_trytake(&g_tErrSem))
 	{
-		rt_kprintf("ta_flush_thread \n");
 		for(i = 0; i < TA_T_NUMS_END; i++)
 		{
 			spinbox_flush_val(_taUI._mods[i]->_mObj, ui_taVal[i].recvDate);
