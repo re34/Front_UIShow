@@ -120,6 +120,7 @@ void Gui_setHightLight(lv_obj_t *obj, bool enable)
 
 void Gui_setOutlineLight(lv_obj_t *obj, lv_color_t color, bool enable)
 {
+	if(obj == NULL) return;
     if (enable) {
 		lv_obj_set_style_outline_width(obj, 3, LV_PART_MAIN);
 		lv_obj_set_style_outline_color(obj, color, LV_PART_MAIN);
@@ -411,7 +412,7 @@ static void btnOk_event_cb(lv_event_t* e)
 				//Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_SAVE));
 			break;
 			case Dialog_Type_TaSave:
-#if defined(RT_USING_USER_PARA)				
+#if defined(RT_USING_USER_PARA) && defined(USING_HVPZT_SCAN)			
 				for(int i = IniLocal_Inx_bias; i < IniLocal_Inx_bias + 3; i++ )
 				{
 					Set_SystemParam(i);

@@ -351,6 +351,15 @@ struct _ui_info
 	} errInfoCont;	
 	lv_timer_t *collect_timer;
 };
+
+extern void Gui_settingInit(lv_obj_t* root);
+extern void Gui_settingOnFocus(lv_obj_t* root);
+extern void Gui_settingExit(lv_obj_t* root);
+
+extern void sample_tile_init(lv_obj_t* root);
+extern void sample_tile_exit(void);
+extern void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val);
+
 #endif
 /*****************************TA界面************************************/
 
@@ -370,9 +379,11 @@ enum E_CfgItem{
 	Item_T_WorkPoint = 4, 
 	Item_T_Min = 5,	
 	Item_T_Max = 6,
+#if defined(USING_HVPZT_SCAN)	
 	ScanItem_bias = 7,
 	ScanItem_amp = 8, 
 	ScanItem_freq = 9,
+#endif
 };
 
 enum E_IniLocal
@@ -391,23 +402,33 @@ struct _Ta_Setting
     lv_obj_t* scanBtn;	
 	lv_timer_t *sample_timer;
 };
+
+#if defined(USING_HVPZT_SCAN)
+	enum E_Page_Index
+	{
+		Page_Index_BtnArea = 0,
+		Page_Index_HVScan = 1,
+		Page_Index_I = 2,
+		Page_Index_T = 3,
+		Page_Index_Max = 4,
+	};
+#else
+	enum E_Page_Index
+	{
+		Page_Index_BtnArea = 0,		
+		Page_Index_I = 1,
+		Page_Index_T = 2,
+		Page_Index_Max = 3,
+	};
 #endif
 
+//TA setting
+extern void Gui_paramInit(lv_obj_t* root);
+extern void Gui_paramOnFocus(lv_obj_t* root);
+extern void Gui_paramExit(lv_obj_t* root);
 
-
-/******************************登录按钮****************************************/
-
-#if defined(UI_USING_FUNC_LOGIN)
-
-struct _login_info
-{
-	lv_obj_t* cont;
-	lv_obj_t* kb;
-	lv_obj_t* userInput;
-	lv_obj_t* pwdInput;
-	lv_obj_t* loginBtn;
-};
 #endif
+
 
 
 extern uint8_t anim_reback;
@@ -452,24 +473,24 @@ extern void Gui_mainOnFocus(lv_obj_t* root);
 extern void Gui_mainExit(lv_obj_t* root);
 
 #if defined(UI_USING_PAGE_SETTING)
-extern void Gui_settingInit(lv_obj_t* root);
-extern void Gui_settingOnFocus(lv_obj_t* root);
-extern void Gui_settingExit(lv_obj_t* root);
 
-extern void sample_tile_init(lv_obj_t* root);
-extern void sample_tile_exit(void);
-extern void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val);
 
 #endif
 
-#if defined(UI_USING_PAGE_PARAM)
-//TA setting
-extern void Gui_paramInit(lv_obj_t* root);
-extern void Gui_paramOnFocus(lv_obj_t* root);
-extern void Gui_paramExit(lv_obj_t* root);
-#endif
+
+/******************************登录按钮****************************************/
 
 #if defined(UI_USING_FUNC_LOGIN)
+struct _login_info
+{
+	lv_obj_t* cont;
+	lv_obj_t* kb;
+	lv_obj_t* userInput;
+	lv_obj_t* pwdInput;
+	lv_obj_t* loginBtn;
+};
+
+
 extern void Gui_loginInit(void);
 extern void Gui_loginExit(void);
 #endif

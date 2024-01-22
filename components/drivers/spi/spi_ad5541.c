@@ -1,6 +1,7 @@
 #include <rtthread.h>
 
 
+#ifdef RT_USING_AD5541
 
 #include "application.h"
 #include "drv_spi.h"
@@ -522,6 +523,6 @@ static void test_paramChange(int argc, char **argv)
 	}
 }
 MSH_CMD_EXPORT(test_paramChange, operate sample: test_paramChange<(cmd)|(value)>);
-
+#endif
 
 

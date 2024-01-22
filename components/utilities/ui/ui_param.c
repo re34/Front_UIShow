@@ -19,7 +19,7 @@ struct _Ta_Setting _taUI;
 #if defined(RT_USING_USER_TRANSPORT)
 
 
-
+#if defined(USING_HVPZT_SCAN)
 const char* Ta_list[TA_HvPzt_NUMS_END] = {
 	"电流设置(mA)",
 	"电流工作点(mA)",		
@@ -32,6 +32,18 @@ const char* Ta_list[TA_HvPzt_NUMS_END] = {
 	"扫描幅值(V)",
 	"扫描频率(HZ)",	
 };
+#else
+const char* Ta_list[TA_HvPzt_NUMS_END] = {
+	"电流设置(mA)",
+	"电流工作点(mA)",		
+	"电流最大值(mA)",
+	/*******************/
+	"温度设置(℃)",
+	"温度工作点(℃)",
+	"温度最小值(℃)",	
+	"温度最大值(℃)",
+};
+#endif
 
 const char* sample_icons[4] = {
 	MY_ICON_CURRENT,
@@ -48,7 +60,7 @@ static void param_inc_event_cb(lv_event_t * e)
 		lv_obj_t *obj = lv_event_get_target(e);
 		uint8_t index = *((uint8_t *)obj->user_data);
 	    lv_spinbox_increment(_taUI._mods[index]->_mObj);
-	
+#if defined(USING_HVPZT_SCAN)
 		if(index <= Item_T_Max){
 			ui_taVal[index].recvDate = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
 			Gui_SendMessge(uart_mq, 
@@ -72,7 +84,15 @@ static void param_inc_event_cb(lv_event_t * e)
 					break;
 				}			
 			}
-		}	
+		}
+#else
+		ui_taVal[index].recvDate = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
+		Gui_SendMessge(uart_mq, 
+						MODBUS_TA_CFG_ADDR + 2 * index, 
+						2, 
+						E_Modbus_TA_Write, 
+						ui_taVal[index].recvDate);
+#endif
     }
 }
 
@@ -82,6 +102,7 @@ static void param_dec_event_cb(lv_event_t * e)
 		lv_obj_t *obj = lv_event_get_target(e);
 		uint8_t index = *((uint8_t *)obj->user_data);
 		lv_spinbox_decrement(_taUI._mods[index]->_mObj);
+#if defined(USING_HVPZT_SCAN)	
 		if(index <= Item_T_Max){
 			ui_taVal[index].recvDate = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
 			Gui_SendMessge(uart_mq, 
@@ -106,6 +127,15 @@ static void param_dec_event_cb(lv_event_t * e)
 				}			
 			}
 		}
+#else
+		ui_taVal[index].recvDate = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
+		Gui_SendMessge(uart_mq, 
+						MODBUS_TA_CFG_ADDR + 2 * index, 
+						2, 
+						E_Modbus_TA_Write, 
+						ui_taVal[index].recvDate);
+#endif
+
     }
 }
 
@@ -124,12 +154,20 @@ static void parambox_event_cb(lv_event_t * e)
 void paramBox_style_init(tab_module_t* t_objBox)
 {
 	spinContent_style_init(t_objBox, &Ta_list[0], parambox_event_cb);
-	
+#if defined(USING_HVPZT_SCAN)	
 	lv_obj_t * btn = spinBtn_style_init(t_objBox, param_inc_event_cb, (void *)&_g_ParasPool._uScanPara);
+#else
+	lv_obj_t * btn = spinBtn_style_init(t_objBox, param_inc_event_cb, NULL);	
+#endif
 	lv_obj_align_to(btn, t_objBox->_mObj, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
 	lv_obj_set_style_bg_img_src(btn, LV_SYMBOL_PLUS, 0);
 	
+#if defined(USING_HVPZT_SCAN)		
 	btn = spinBtn_style_init(t_objBox, param_dec_event_cb, (void *)&_g_ParasPool._uScanPara);
+#else
+	btn = spinBtn_style_init(t_objBox, param_dec_event_cb, NULL);	
+#endif	
+
 	lv_obj_align_to(btn, t_objBox->_mObj, LV_ALIGN_OUT_LEFT_MID, -8, 0);
 	lv_obj_set_style_bg_img_src(btn, LV_SYMBOL_MINUS, 0);
 }
@@ -158,6 +196,7 @@ tab_module_t *TA_SubCreate(lv_obj_t * parent, uint8_t inx)
 				t_tabBox->_attr.bHasDot = true;
 				t_tabBox->_attr.range_max = 60000;		
 			break;
+#if defined(USING_HVPZT_SCAN)			
 			//最大100(V)
 			case ScanItem_bias:
 				t_tabBox->_attr.bHasDot = true;
@@ -174,12 +213,17 @@ tab_module_t *TA_SubCreate(lv_obj_t * parent, uint8_t inx)
 				t_tabBox->_attr.range_min = 1;
 				t_tabBox->_attr.range_max = 50;
 			break;
-		}		
+#endif
+		}
+#if defined(USING_HVPZT_SCAN)
 		//除高压PZT配置项外都是通信, ui_taVal[0~6]
 		if(inx <= Item_T_Max) 
 			t_tabBox->_attr._initVal = ui_taVal[inx].recvDate;
 		else
 			t_tabBox->_attr._initVal = _g_ParasPool._uScanPara.params[inx - ScanItem_bias];
+#else
+		t_tabBox->_attr._initVal = ui_taVal[inx].recvDate;
+#endif
         t_tabBox->_root = lv_obj_create(parent);	
 		t_tabBox->_mObj = lv_spinbox_create(t_tabBox->_root);
 		paramBox_style_init(t_tabBox);	
@@ -260,7 +304,7 @@ static void tileview_load_event_cb(lv_event_t* e)
 		
 		uint8_t index = lv_obj_get_index(lv_tileview_get_tile_act(tv_obj));
 		Gui_setOutlineLight(lv_obj_get_child(btn_cont, index), lv_color_hex(0xff931e), true);
-		for(int i = 0; i <= 3; i++)
+		for(int i = 0; i < Page_Index_Max; i++)
 		{
 			if(i != index)
 				Gui_setOutlineLight(lv_obj_get_child(btn_cont, i), lv_color_white(), false);			
@@ -323,15 +367,16 @@ static void btn_exit_cb(lv_event_t* event)
 	if(event->code == LV_EVENT_CLICKED)
 	{
 		uint8_t id = PAGE_MAIN;
+		lv_timer_pause(_taUI.sample_timer);	
+#if defined(USING_HVPZT_SCAN)
 		Dac_Para *sPara =  (Dac_Para *)event->user_data;
-		
-		lv_timer_pause(_taUI.sample_timer);
 		//退出界面关闭扫描
 		if(sPara->chipVal.scanState == Power_Proc_On)
 		{
 			sPara->chipVal.scanState = Power_Proc_Off;
 			rt_sem_release(&param_Sem);	
 		}
+#endif
 		lv_group_set_editing(lv_group_get_default(), false);
 		lv_group_remove_all_objs(lv_group_get_default());
 		anim_reback = 0;
@@ -351,7 +396,7 @@ static void btn_save_cb(lv_event_t* event)
 	}			
 }
 
-
+#if defined(USING_HVPZT_SCAN)
 static void btn_HvPzt_cb(lv_event_t* event)
 {
 	Dac_Para *sPara =  (Dac_Para *)event->user_data;
@@ -382,6 +427,7 @@ static void btn_HvPzt_cb(lv_event_t* event)
 		}			
 	}	
 }
+#endif
 
 static void btn_Switch_cb(lv_event_t* event)
 {
@@ -473,20 +519,24 @@ void Gui_paramInit(lv_obj_t* root)
 	/*************************************************************************
 	* 1. 保存设置区(分页1)
 	**************************************************************************/		
-  	lv_obj_t *other_tile = lv_tileview_add_tile(tvcont, 0, 0, LV_DIR_RIGHT);
+  	lv_obj_t *other_tile = lv_tileview_add_tile(tvcont, Page_Index_BtnArea, 0, LV_DIR_RIGHT);
 	/*************************************************************
 	* 板内集成高压扫描模块，不需要通讯，默认退出配置界面就关闭
 	**************************************************************/
 	//扫描按钮
+
 	lv_obj_t *HvPzt_btn = lv_btn_create(other_tile);
 	lv_obj_set_size(HvPzt_btn, 60, 50);
 	lv_obj_set_style_text_font(HvPzt_btn, &font_symbol_32,  LV_PART_MAIN);
 	lv_obj_set_style_bg_img_src(HvPzt_btn, MY_SYMBOL_SUMMARY, 0);
+
+	lv_obj_set_style_radius(HvPzt_btn, 20, LV_PART_MAIN);
+#if defined(USING_HVPZT_SCAN)	
 	//每次退出界面均关闭扫描，所以默认是关闭状态（红色）
 	lv_obj_set_style_bg_color(HvPzt_btn, lv_color_hex(0xd74047), LV_PART_MAIN);
-	lv_obj_set_style_radius(HvPzt_btn, 20, LV_PART_MAIN);
 	lv_obj_add_event_cb(HvPzt_btn, btn_HvPzt_cb, LV_EVENT_CLICKED, (void *)&_g_ParasPool._uScanPara);
 	lv_obj_add_event_cb(HvPzt_btn, btn_HvPzt_cb, LV_EVENT_VALUE_CHANGED, (void *)&_g_ParasPool._uScanPara);
+#endif
 	lv_obj_align(HvPzt_btn, LV_ALIGN_TOP_MID, -40, 30);
 	_taUI.scanBtn = HvPzt_btn;
 	//电源按钮
@@ -511,12 +561,17 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_style_text_font(Exit_btn, &font_symbol_32,  LV_PART_MAIN);
 	lv_obj_set_style_bg_img_src(Exit_btn, MY_SYMBOL_EXIT, 0);
 	lv_obj_set_style_radius(Exit_btn, 20, LV_PART_MAIN);	
+#if defined(USING_HVPZT_SCAN)		
 	lv_obj_add_event_cb(Exit_btn, btn_exit_cb, LV_EVENT_CLICKED, (void *)&_g_ParasPool._uScanPara);
+#else
+	lv_obj_add_event_cb(Exit_btn, btn_exit_cb, LV_EVENT_CLICKED, NULL);	
+#endif
 	lv_obj_align(Exit_btn, LV_ALIGN_BOTTOM_MID, 40, -30);	
+#if defined(USING_HVPZT_SCAN)	
 	/*************************************************************************
 	* 2. 高压PZT设置区(分页2)
 	**************************************************************************/	
-  	lv_obj_t* hvPzt_tile = lv_tileview_add_tile(tvcont, 1, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
+  	lv_obj_t* hvPzt_tile = lv_tileview_add_tile(tvcont, Page_Index_HVScan, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
 	lv_obj_set_flex_flow(hvPzt_tile, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_style_pad_hor(hvPzt_tile, 8, LV_PART_MAIN);
 	lv_obj_set_style_pad_row(hvPzt_tile, 0, LV_PART_MAIN);
@@ -524,10 +579,11 @@ void Gui_paramInit(lv_obj_t* root)
 	{
     	_taUI._mods[i] = TA_SubCreate(hvPzt_tile, i);
 	}	
+#endif
 	/*************************************************************************
 	* 1. 电流设置区(分页3)
 	**************************************************************************/
-    lv_obj_t* current_tile = lv_tileview_add_tile(tvcont, 2, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
+    lv_obj_t* current_tile = lv_tileview_add_tile(tvcont, Page_Index_I, 0, LV_DIR_RIGHT | LV_DIR_LEFT);
 	lv_obj_set_flex_flow(current_tile, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_style_pad_hor(current_tile, 8, LV_PART_MAIN);
 	lv_obj_set_style_pad_row(current_tile, 0, LV_PART_MAIN);
@@ -538,7 +594,7 @@ void Gui_paramInit(lv_obj_t* root)
 	/*************************************************************************
 	* 2. 温度设置区(分页4)
 	**************************************************************************/	
-  	lv_obj_t* temper_tile = lv_tileview_add_tile(tvcont, 3, 0, LV_DIR_LEFT);
+  	lv_obj_t* temper_tile = lv_tileview_add_tile(tvcont, Page_Index_T, 0, LV_DIR_LEFT);
 	lv_obj_set_flex_flow(temper_tile, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_style_pad_hor(temper_tile, 8, LV_PART_MAIN);
 	lv_obj_set_style_pad_row(temper_tile, 0, LV_PART_MAIN);
@@ -556,13 +612,14 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_size(tvBtn_cont, 200, 30);
 	lv_obj_align_to(tvBtn_cont, tvcont, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);	
 	lv_obj_clear_flag(tvBtn_cont, LV_OBJ_FLAG_SCROLLABLE);
-	for(i = 0; i < 4; i++)
+	for(i = 0; i < Page_Index_Max; i++)
 	{
 		tvBtn = lv_btn_create(tvBtn_cont);
 		lv_obj_set_size(tvBtn, 15, 15);
 		lv_obj_set_style_bg_color(tvBtn, lv_color_white(), LV_PART_MAIN);
 		lv_obj_set_style_radius(tvBtn, 15, LV_PART_MAIN);
 		Gui_setOutlineLight(tvBtn, lv_color_hex(0xff931e), i == 0?true:false);
+#if defined(USING_HVPZT_SCAN)
 		switch(i)
 		{
 			case 0:
@@ -578,6 +635,20 @@ void Gui_paramInit(lv_obj_t* root)
 				lv_obj_align(tvBtn, LV_ALIGN_CENTER, 35, 0);
 			break;
 		}
+#else
+		switch(i)
+		{
+			case 0:
+				lv_obj_align(tvBtn, LV_ALIGN_CENTER, -25, 0);
+			break;
+			case 1:
+				lv_obj_align(tvBtn, LV_ALIGN_CENTER, 0, 0);
+			break;
+			case 2:
+				lv_obj_align(tvBtn, LV_ALIGN_CENTER, 25, 0);
+			break;
+		}
+#endif
 	}
 	//翻页回调
 	lv_obj_add_event_cb(tvcont, tileview_load_event_cb, LV_EVENT_VALUE_CHANGED, (void *)tvBtn_cont);

@@ -47,11 +47,15 @@
 //TA参数数量
 #define TA_I_NUMS_END 				3     //电流参数
 #define TA_T_NUMS_END				7	  //温度参数
-#define OPTIONS_NUMS_END			8	  
-#define TA_HvPzt_NUMS_END			10	  //高压PZT
+#define OPTIONS_NUMS_END			8	  //(电流 + 温度 + options(保存+继电器开关))
+
 #define TA_SAMPLE_ADDR				8	  //ta采样起始数组地址
 
-
+#if defined(USING_HVPZT_SCAN)
+	#define TA_HvPzt_NUMS_END			10	  //高压PZT
+#else
+	#define TA_HvPzt_NUMS_END			7	  //无高压PZT模块
+#endif
 
 typedef  union _Modbus_Date {
     uint32_t recvDate;

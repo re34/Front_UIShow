@@ -2,6 +2,7 @@
 #include "mod_dac.h"
 #include "mod_para.h"
 
+#ifdef RT_USING_DAC_DEV
 /***********dac 具体芯片使能*****************/
 #ifdef RT_USING_AD5541
 #include "spi_ad5541.h"
@@ -114,5 +115,5 @@ M_DacChipOpr* DacChipExit(M_DacChipOpr **pHead, char *pcName)
     }
 	return *pHead;
 }
-
+#endif
 

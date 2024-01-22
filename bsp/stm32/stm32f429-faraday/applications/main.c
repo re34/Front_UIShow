@@ -13,6 +13,14 @@
 */
 
 
+
+/********************************************************************
+ * 宏定义控制： UI_USING_I_SCAN -----使用电流扫描，适配DFB，配置参数通过modbus通讯
+ * 				!UI_USING_I_SCAN -----使用高压pzt模块扫描，适配高压ecdl，配置参数显示板配置
+ * 
+ *
+ ******************************************************************/
+
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
@@ -101,7 +109,10 @@ int main(void)
 #if defined(RT_USING_USER_TRANSPORT)
 	trans_modbusInit();
 #endif
-	MainCore.new_object(ptLaser, CLASS_CHIPDAC, 0, (void *)&_g_ParasPool);	
+
+#ifdef RT_USING_DAC_DEV
+	MainCore.new_object(ptLaser, CLASS_CHIPDAC, 0, (void *)&_g_ParasPool);
+#endif
 	lvgl_thread_init();
 	while(1)
 	{

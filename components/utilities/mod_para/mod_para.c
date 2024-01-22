@@ -4,7 +4,7 @@
 #include "mod_para.h"
 #include <stdio.h>
 
-
+#if defined(RT_USING_USER_PARA)
 #define __INIT_INI_VAL(_sn, _kn, _v_name, _dv, _in)                   \
 	{                                                                 \
 		.section_name = _sn, .key_name = _kn, .def_val._v_name = _dv, \
@@ -358,4 +358,4 @@ void Set_SystemParam(uint16_t index)
     }
 #endif
 }
-
+#endif
