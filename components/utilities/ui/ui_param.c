@@ -9,11 +9,11 @@ struct _Ta_Setting _taUI;
 const char* Ta_list[TA_T_NUMS_END] = {
     "电流设置(mA)",
 	"电流工作点(mA)",		
-	"电流最大值(mA)",	
+	"电流上限值(mA)",	
 	"温度设置(℃)",
 	"温度工作点(℃)",
-	"温度最小值(℃)",	
-	"温度最大值(℃)",	
+	"温度下限值(℃)",	
+	"温度上限值(℃)",	
 };
 
 const char* sample_icons[4] = {
@@ -151,8 +151,8 @@ void sampleGrp_MainCreate(lv_obj_t* parent)
 	lv_obj_set_style_pad_row(parent, 6, LV_PART_MAIN); 	//设置各item之间的行间距
 	const char* TextList[4] =
 	{
-		"采样电流(A)",
-		"设置电流(A)",
+		"采样电流(mA)",
+		"设置电流(mA)",
 		"采样温度(℃)",
 		"设置温度(℃)",
 	};
@@ -217,10 +217,10 @@ void viewBar_Update(viewInfo_t *info, uint8_t index)
 		default:
 		break;
 	}
-	//if(ret < 0)
-	//	lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
-	//else
-		lv_label_set_text_fmt(info->Bar_icon, "%.2f", (index > 1)?((float)tmp / 10):((float)tmp / 1000));
+	if(ret < 0)
+		lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
+	else
+		lv_label_set_text_fmt(info->Bar_icon, "%.2f", (index > 1)?((float)tmp / 10) : tmp);
 }
 
 

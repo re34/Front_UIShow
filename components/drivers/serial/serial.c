@@ -441,7 +441,7 @@ static void rt_dma_recv_update_put_index(struct rt_serial_device *serial, rt_siz
     }
     
     if(rx_fifo->is_full == RT_TRUE)
-    {
+    {    	
         _serial_check_buffer_size();
         rx_fifo->get_index = rx_fifo->put_index;
     }

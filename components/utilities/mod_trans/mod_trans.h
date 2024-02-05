@@ -4,38 +4,30 @@
 #include <rtthread.h>
 
 
-//自动找峰(13)/手动失锁(12)/保存(11)/空(10)/自动锁定失锁（9）/开关机(8)/ 7~ 0继电器
-//11 ~ 13 不需要保存状态
-#define BIT_AUTO_SEARCH		13
-#define BIT_UNLOCK			12
-#define BIT_SAVE			11
-//#define BIT_SCAN			10
-#define BIT_SCAN			7
-#define BIT_AUTO_LOCK		9
-#define BIT_PowerSw			8
-
-
 #define E_Modbus_Write		0x22
 #define E_Modbus_Read		0x33
 #define E_Modbus_TA_Write	0x34
 #define E_Modbus_TA_Read	0x35
 
 
-
-
-
 #define RT_MODBUS_SIZE   	128
 
 
-//LD
+//DFB
 #define LD_UART_NAME 		"uart6"
-
 #define LOCK_STATE_ADDR 	5
-#define MODBUS_LD_CFG_ADDR	16 	 //LD采样起始寄存器地址
-#define ITEM_ADDR_HEAD		MODBUS_LD_CFG_ADDR + 2
-#define MAX_SAMPLE_NUM 		8
+#define MODBUS_DFB_CFG_ADDR	20 	 //DFB配置起始寄存器地址
+#define ITEM_ADDR_HEAD		MODBUS_DFB_CFG_ADDR + 2
+#define MAX_SAMPLE_NUM 		10
 #define MAX_CONFIG_NUM		16	 //switch + 15 spinbox
 
+//7 ~ 8 不需要保存状态
+#define BIT_UNLOCK			8
+#define BIT_SAVE			7
+#define BIT_SCAN			6
+#define BIT_AUTO_LOCK		5
+#define BIT_PowerSw			4
+/******************************************************************************/
 //TA
 #define TA_UART_NAME 				"uart2"
 #define MODBUS_TA_CFG_ADDR			1	 //ta配置起始寄存器地址

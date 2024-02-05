@@ -91,7 +91,7 @@ static void trans_modbus_poll_thread(void *param)
 				case E_Modbus_Read:
 				{
 					type = TYPE_SAMPLE_DATA;
-					if(r_msgCode.i_addr >= MODBUS_LD_CFG_ADDR)
+					if(r_msgCode.i_addr >= MODBUS_DFB_CFG_ADDR)
 						type = TYPE_CFG_DATA;				
 					uwRet = modbus_read_registers(smb_master, r_msgCode.i_addr, r_msgCode.i_regNum, temp_buff);
 					if (uwRet >= MODBUS_OK)
@@ -105,7 +105,7 @@ static void trans_modbus_poll_thread(void *param)
 					}else{
 						//配置类数据错误重发
 						if(type == TYPE_CFG_DATA)
-							Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);					
+							Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);					
 					}
 					break;
 				}
@@ -167,11 +167,14 @@ int modbus_Initial(small_modbus_t *smb_master, bool enable485)
 	
 	struct serial_configure serial_config;
 	//init modbus
-	if(enable485  == false)
+	if(enable485  == false){
 		modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(LD_UART_NAME)); 
-	else
-		modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(TA_UART_NAME)); 		
-	serial_config.baud_rate = BAUD_RATE_19200;
+		serial_config.baud_rate = BAUD_RATE_115200;
+	}
+	else{
+		modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(TA_UART_NAME)); 
+		serial_config.baud_rate = BAUD_RATE_19200;
+	}
 	serial_config.data_bits = DATA_BITS_8;
 	serial_config.stop_bits = STOP_BITS_1;
 	serial_config.bufsz = RT_MODBUS_SIZE;

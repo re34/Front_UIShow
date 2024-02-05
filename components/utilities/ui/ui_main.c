@@ -14,7 +14,7 @@ const char* app_names_symbol[] = {
 };
 
 const char* app_names[] = {
-    "TA Setting","Summary","LD Setting",
+    "TA Setting","Summary","DFB Setting",
 };
 
 

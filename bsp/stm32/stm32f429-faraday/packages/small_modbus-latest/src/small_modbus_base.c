@@ -16,11 +16,7 @@ int _modbus_init(small_modbus_t *smb)
         smb->transfer_id = 0;
         smb->protocol_id = 0;
         smb->debug_level = 2; // log level info
-        if (smb->timeout_frame == 0)
-        {
-            //smb->timeout_frame = 100;
-            smb->timeout_frame = 100;
-        }
+        smb->timeout_frame = 100;  //默认100ms
         if (smb->timeout_byte == 0)
         {
             smb->timeout_byte = 10;

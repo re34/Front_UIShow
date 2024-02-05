@@ -23,34 +23,32 @@
 #include "mod_trans.h"
 
 
-
+//DFB	
 const char* label_list[PARAM_ITEM_NUMS_END] = {
+/***********常用*******************/
     "电流设置(mA)",
-	"温度设置(℃)",
-	"扫描频率(HZ)",
-	"扫描幅值(V)",
-	"扫描偏置(V)",
+	"一级温度设置(℃)",
+	"二级温度设置(℃)",
+	"三级温度设置(℃)",
+	"电流扫描幅值(mA)",
 	"调制相位",
 	"调制频率(HZ)",
-/******************************/
-	"电流最大值(mA)",
-	"温度最大值(℃)",	
-	"扫描电流(mA)",
-	"自动锁峰尖识别值",
+/***********开发者*******************/
+	"电流上限值(mA)",
+	"温度上限值(℃)",
 	"电流工作点(mA)",
-	"温度工作点(℃)",		
+	"一级温度工作点(℃)",
+	"二级温度工作点(℃)",
+	"三级温度工作点(℃)",
 	"调制频率工作点(HZ)",	
 	"调制相位工作点",
 };
 
 const char* Switch_list[RELAY_NUMS] = {
 	"开关1",
-	"112",
-	"113",
-	"开关4",
-	"115",
-	"116",
-	"开关7",
+	"开关2",
+	"开关5",
+	"开关6",
 };
 
 const char *btn_names[2] = {
@@ -58,10 +56,12 @@ const char *btn_names[2] = {
 	MY_ICON_AUTO_PEAK,
 };
 
-const char* view_icons[3] = {
+
+const char* view_icons[VIEW_SAMPLE_NUMS] = {
 	MY_ICON_CURRENT,
 	MY_ICON_TEMPER,
-	MY_ICON_DDS,
+	MY_ICON_TEMPER,
+	MY_ICON_TEMPER,
 };
 
 struct _ui_Setting _settingUI;
@@ -78,6 +78,9 @@ static void spinbox_Send_updateVal(uint8_t index, int32_t value)
 
 
 
+/**********************************************************
+* 告警值判断
+***************************************************************/
 void spinbox_judge_val(uint8_t index, bool enable)
 {
 	int32_t limitVal = 0;
@@ -86,16 +89,24 @@ void spinbox_judge_val(uint8_t index, bool enable)
 	switch(index)
 	{
 		case Item_Current:
-		case Item_Temper:
+		case Item_Temper_Lv1:
 			limitVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET]->_mObj);
 			if(nowVal > limitVal)
 			{
 				ret = -1;
 			}	
 		break;
-		case Item_PztBias:
-			limitVal = lv_spinbox_get_value(_settingUI._mods[index - 1]->_mObj);
-			if((nowVal + limitVal) > PZT_AMP_MAX)
+		//二、三级温控与一级温控共用1个告警值
+		case Item_Temper_Lv2:
+			limitVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET - 1]->_mObj);
+			if(nowVal > limitVal)
+			{
+				ret = -1;
+			}
+		break;
+		case Item_Temper_Lv3:
+			limitVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET - 2]->_mObj);
+			if(nowVal > limitVal)
 			{
 				ret = -1;						
 			}
@@ -116,17 +127,6 @@ void spinbox_judge_val(uint8_t index, bool enable)
 		}
 	}
 }
-
-
-
-void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val)
-{
-	if((1 << index) & val)
-		lv_obj_add_state(obj, LV_STATE_CHECKED);
-	else
-		lv_obj_clear_state(obj, LV_STATE_CHECKED);			
-}
-
 
 void spinbox_overFlow_send(bool enable)
 {
@@ -215,7 +215,7 @@ static void spinbox_event_cb(lv_event_t * e)
 
 void spinBox_style_init(tab_module_t* t_objBox)
 {
-	spinContent_style_init(UI_Type_LD, t_objBox, &label_list[0], spinbox_event_cb);
+	spinContent_style_init(UI_Type_DFB, t_objBox, &label_list[0], spinbox_event_cb);
 	
 	lv_obj_t * btn = spinBtn_style_init(t_objBox, lv_spinbox_inc_event_cb);
 	lv_obj_align_to(btn, t_objBox->_mObj, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
@@ -227,6 +227,13 @@ void spinBox_style_init(tab_module_t* t_objBox)
 
 
 /*****************************************************************************************/
+void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val)
+{
+	if((1 << index) & val)
+		lv_obj_add_state(obj, LV_STATE_CHECKED);
+	else
+		lv_obj_clear_state(obj, LV_STATE_CHECKED);			
+}
 
 static void sw_event_cb(lv_event_t *e)
 {
@@ -242,7 +249,7 @@ static void sw_event_cb(lv_event_t *e)
 		}else{
 			_settingUI.iSwitchs = (_settingUI.iSwitchs & 0x7FF)&(~(1 << index));		
 		}
-		Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
+		Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
     }
 }
 
@@ -283,22 +290,17 @@ tab_module_t *subTab_create(lv_obj_t * parent, uint8_t index, uint8_t tabType, v
 		t_tabBox->_attr.itemIndex = index;
 		t_tabBox->_attr.range_min = 0;			
 		//频率设置项
-		if(index == 2 || index == 6 || index == 13)
+		if(index == 6 || index == 13)
 		{
 			t_tabBox->_attr.bHasDot = false;
 			t_tabBox->_attr.range_min = 1;
 			t_tabBox->_attr.range_max = 6000000;
-		//PZT扫描偏置
-		}else if(index == 4)
-		{
-			t_tabBox->_attr.bHasDot = true;
-			t_tabBox->_attr.range_max = 14000;
 		}
-		//pzt扫描幅值		
-		else if(index == 3)
+		//电流扫描幅值(MAX = 5mA)
+		else if(index == 4)
 		{
-			t_tabBox->_attr.bHasDot = true;
-			t_tabBox->_attr.range_max = 7000;
+			t_tabBox->_attr.bHasDot = true;	
+			t_tabBox->_attr.range_max = 5000;
 		}
 		//dds相位
 		else if(index == 5 || index == 14)
@@ -308,7 +310,8 @@ tab_module_t *subTab_create(lv_obj_t * parent, uint8_t index, uint8_t tabType, v
 		}else{
 			t_tabBox->_attr.bHasDot = true;
 			t_tabBox->_attr.range_max = 999999;
-		}			
+		}
+
         t_tabBox->_root = lv_obj_create(parent);
 		if(tabType == ENUM_TYPE_TXT)
 		{
@@ -430,7 +433,7 @@ static void switchLock_event_cb(lv_event_t *e)
 				p_attr->_initVal = Power_Proc_On;
 				_settingUI.iSwitchs = (_settingUI.iSwitchs & 0x7FF)|(1 << BIT_PowerSw); 
 			}
-			Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
+			Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
 			lv_anim_start(&_settingUI._mods_sp[p_attr->itemIndex]->anim);			
 		}
 		else{
@@ -442,22 +445,18 @@ static void switchLock_event_cb(lv_event_t *e)
 				************************/			
 				p_attr->_initVal = Lock_Proc_Off;
 				_settingUI.iSwitchs = (_settingUI.iSwitchs & 0x7FF)&(~(1 << BIT_AUTO_LOCK));	
-				ui.bottomInfo.bFirstEntryLock = false;
+				ui.Stat.bFirstEntryLock = false;
 				ui_sample[LOCK_STATE_ADDR].recvDate = 0; 
-				_settingUI.iSwitchs |= (1 << BIT_SCAN);
-				Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_UNLOCK));					
+				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_UNLOCK));					
 				/************************
 				*3. 关闭4个继电器
 				************************/					
-				lv_obj_clear_state(_settingUI._mods_sw[1]->_mObj, LV_STATE_CHECKED);
-				lv_obj_clear_state(_settingUI._mods_sw[2]->_mObj, LV_STATE_CHECKED);		
-				lv_obj_clear_state(_settingUI._mods_sw[4]->_mObj, LV_STATE_CHECKED);
-				lv_obj_clear_state(_settingUI._mods_sw[5]->_mObj, LV_STATE_CHECKED);
-				_settingUI.iSwitchs &= ~0x36;	
-				/************************
-				*4. 打开扫描
-				************************/
-				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0x3b67b0), LV_PART_MAIN);
+				lv_obj_clear_state(_settingUI._mods_sw[0]->_mObj, LV_STATE_CHECKED);
+				lv_obj_clear_state(_settingUI._mods_sw[1]->_mObj, LV_STATE_CHECKED);		
+				lv_obj_clear_state(_settingUI._mods_sw[2]->_mObj, LV_STATE_CHECKED);
+				lv_obj_clear_state(_settingUI._mods_sw[3]->_mObj, LV_STATE_CHECKED);
+				_settingUI.iSwitchs &= ~0x0F;
+	
 				/************************
 				*5. 调整动画值
 				************************/
@@ -472,13 +471,13 @@ static void switchLock_event_cb(lv_event_t *e)
 			else{
 				_settingUI.iSwitchs = (_settingUI.iSwitchs & 0x7FF)|(1 << BIT_AUTO_LOCK);
 				/************************
-				*1. 关闭扫描
+				*1. 关闭扫描(变红)
 				************************/				
 				p_attr->_initVal = Lock_Proc_handling;
 				_settingUI.iSwitchs &= ~(1 << BIT_SCAN);
 				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);		
 			}
-			Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
+			Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
 			lv_anim_start(&_settingUI._mods_sp[p_attr->itemIndex]->anim);	
 		}
 	}
@@ -586,34 +585,6 @@ sw_module_t *switchLock_create(lv_obj_t * parent, uint8_t index, void *ext_data)
 	return t_swMod;
 }
 
-/*****************************************************************************************
-*	切换至采样界面
-********************************************************************************/
-static void btnSample_event_cb(lv_event_t* event)
-{
-	/*设置主页面为设置所在页*/
-	if(event->code == LV_EVENT_CLICKED)
-	{
-		lv_obj_t *sample_tile = lv_obj_get_parent(ui.topInfo.cont);
-		lv_obj_t *root = lv_obj_get_parent(sample_tile);
-		lv_obj_set_tile(root, sample_tile, LV_ANIM_ON);
-		
-		/******************************************
-		* 开启采集器刷新定时器, 关闭锁定监控 已在页面切换中实现
-		* lv_timer_resume(ui.collect_timer);
-		* lv_timer_pause(_settingUI.lock_monitor);
-		*****************************************/
-		//关闭超时检查
-		if(enc_Chker.bIsTimerRun == true)
-		{
-			lv_timer_pause(enc_Chker.enc_flewTimer);
-			enc_Chker.bIsTimerRun = false;
-		}
-	}
-}
-
-
-
 /***************************************************************
 * 手动失锁操作
 *****************************************************************/
@@ -661,11 +632,9 @@ static void btnPztScan_event_cb(lv_event_t* e)
 			_settingUI.iSwitchs &= ~(1 << BIT_SCAN);
 			lv_obj_set_style_bg_color(e->target, lv_color_hex(0xd74047), LV_PART_MAIN);
 		}
-		Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);	
+		Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);
 	}
-
 }
-
 
 
 
@@ -683,7 +652,7 @@ void Func_ManualBtnInit(lv_obj_t *parent, uint8_t index)
 		lv_obj_add_event_cb(cont, btnPztScan_event_cb, LV_EVENT_CLICKED, NULL);
 		//更新扫描初始化状态
 		if(!(_settingUI.iSwitchs & (1 << BIT_SCAN)))
-			lv_obj_set_style_bg_color(cont, lv_color_hex(0xd74047), LV_PART_MAIN);	
+			lv_obj_set_style_bg_color(cont, lv_color_hex(0xd74047), LV_PART_MAIN);
 	}
 	lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
@@ -763,23 +732,15 @@ void viewGrp_MainCreate(lv_obj_t* parent)
 		LV_FLEX_ALIGN_CENTER,
 		LV_FLEX_ALIGN_CENTER
 	);
-	lv_obj_set_style_pad_row(parent, 5, LV_PART_MAIN); 	//设置各item之间的行间距
-	const char* TextList[3] =
+	lv_obj_set_style_pad_row(parent, 0, LV_PART_MAIN); 	//设置各item之间的行间距
+	const char* TextList[VIEW_SAMPLE_NUMS] =	
 	{
 		"电流(mA)",
-		"温度(℃)",
-		"积分",
+		"一级温度(℃)",
+		"二级温度(℃)",		
+		"三级温度(℃)",				
 	};
-	//监控按钮		
-	lv_obj_t *monitor_cont = lv_obj_create(parent);
-	lv_obj_remove_style_all(monitor_cont);
-	lv_obj_set_size(monitor_cont, 100, 30);
-	lv_obj_add_flag(monitor_cont, LV_OBJ_FLAG_CLICKABLE);
-	lv_obj_add_event_cb(monitor_cont, btnSample_event_cb, LV_EVENT_CLICKED, NULL);
-	lv_obj_t *monitorIcon = lv_label_create(monitor_cont);
-	lv_obj_add_style(monitorIcon, &style_tabIcon, LV_PART_MAIN);
-	lv_label_set_text(monitorIcon, MY_ICON_MONITOR);
-	lv_obj_align(monitorIcon, LV_ALIGN_CENTER, 0, 0);
+
 		
 	for (int i = 0; i < ARRAY_SIZE(_settingUI.labelGrp); i++)
 	{
@@ -794,13 +755,19 @@ void viewGrp_MainCreate(lv_obj_t* parent)
 
 static void tabBtn_event_cb(lv_event_t * e)
 {
-	bool isAdmin = *((bool *)(lv_event_get_user_data(e)));
+	lv_obj_t *obj = lv_event_get_target(e);
+	uint8_t id = lv_tabview_get_tab_act(lv_obj_get_parent(obj));
+	//切换到第一页时关闭超时检查
+	if(id == 0 && enc_Chker.bIsTimerRun == true)
+	{
+		lv_timer_pause(enc_Chker.enc_flewTimer);
+		enc_Chker.bIsTimerRun = false;
+	}
+	bool isAdmin = *((bool *)(lv_event_get_user_data(e)));	
 	if(isAdmin == Authority_Developer)
 	{
 		return;
 	}
-	lv_obj_t *obj = lv_event_get_target(e);
-	uint8_t id = lv_tabview_get_tab_act(lv_obj_get_parent(obj));
 	if(id > 1)//除了第1、2个分页
 	{
 		lv_label_set_text(ui_Dialog.title, "请先登录!");
@@ -861,7 +828,7 @@ void setting_tile_init(lv_obj_t *parent)
 	{
     	_settingUI._mods_sp[i] = switchLock_create(user_root, i, NULL);
 	}
-	//2个手动按钮       解锁/找峰
+	//2个手动按钮       解锁/扫描（或找峰）
 	for(i = 0; i < 2; i++)
 	{
 		Func_ManualBtnInit(user_root, i);
@@ -964,7 +931,7 @@ void Gui_settingInit(lv_obj_t* root)
     /*设置主页面为时间所在页*/
     lv_obj_set_tile(root, setting_tile, LV_ANIM_OFF);	
 	//发送第一帧配置数据更新
-	Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);
+	Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);
 }
 
 void Gui_settingOnFocus(lv_obj_t* root)

@@ -6,6 +6,7 @@
 #include "mod_trans.h"
 
 #define TIME_ON_TRIGGER		10
+#define IDLE_OVERFLOW_TIME 	4	  //4X50 = 200ms空闲发送数据
 
 /**
  * @alarm_on                f0f3
@@ -83,23 +84,23 @@
 
 #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
+//DFB参数数量
 
+#define VIEW_SAMPLE_NUMS				4
+#define MAX_TEMP_NUMS					3
+#define MAIN_SAMPLE_NUMS				4
 
-
-//LD参数数量
 #define DEVELOP_ITEM_NUMS_END 			7     //常用参数数量
 #define PARAM_ITEM_NUMS_END				15	  //其他参数数量
-#define RELAY_NUMS 						7	  //开关继电器数量
+#define ALARM_OFFSET					7	  //告警值与设置值的序号偏移
 
+
+#define RELAY_NUMS 						4	  //开关继电器数量
 #define DATA_OFFSET						6	  //采集(副)与采集（主）数组偏移
-#define ALARM_OFFSET					7	  //
-#define IDLE_OVERFLOW_TIME 				4	  //4X50 = 200ms空闲发送数据
+
 
 #define RANGE_MIN	45			  //弧形进度条初始角
 #define RANGE_MAX	315			  //弧形进度条终止角
-
-
-#define PZT_AMP_MAX						14000 // 14V
 
 enum {
 	ENUM_TYPE_SW = 0,
@@ -119,7 +120,7 @@ enum PAGE_ID
 enum E_UI_Type
 {
 	UI_Type_TA	= 0,
-	UI_Type_LD	= 1,
+	UI_Type_DFB	= 1,
 };
 
 enum E_LockProc
@@ -156,13 +157,15 @@ enum E_DialogType
 	Dialog_Type_None			= 10,	
 };
 
-enum E_LD_ItemIndex
+enum E_DFB_ItemIndex
 {
 	Item_Current   = 0,
-	Item_Temper	   = 1,
-	Item_PztAmp	   = 3,
-	Item_PztBias   = 4,
+	Item_Temper_Lv1	   = 1,
+	Item_Temper_Lv2	   = 2,	
+	Item_Temper_Lv3	   = 3,	
+	Item_PztAmp	   = 4,
 };
+
 
 //TA采样数据序列
 enum E_TA_ItemIndex
@@ -178,7 +181,6 @@ enum E_TA_WarnIndex
 	Item_Ta_Warn_Imax  	 = 2,
 	Item_Ta_Warn_Tmin  	 = 5,		
 	Item_Ta_Warn_Tmax	 = 6,
-
 };
 
 enum E_User_Authority
@@ -270,14 +272,8 @@ struct _ui_info
 	{
 		lv_obj_t* cont;
 		module_t* I_module;
-		module_t* T_module;
+		module_t* T_module[MAX_TEMP_NUMS];
 	}topInfo;
-	struct
-	{
-		lv_obj_t* cont;
-		SubInfo_t labelInfoGrp[6];
-		bool bFirstEntryLock;
-	} bottomInfo;
 	struct
 	{
 		lv_obj_t* cont;
@@ -291,6 +287,12 @@ struct _ui_info
 		lv_obj_t* title;
 		lv_obj_t* btnOK;
 	} errInfoCont;	
+	struct
+	{
+		bool bFirstEntryLock;
+		bool bIsOccueOnce;
+		bool bIsNeedFlush;
+	} Stat;		
 	lv_timer_t *collect_timer;
 };
 
@@ -299,7 +301,6 @@ struct _ui_info
 
 struct m_attr_t
 {
-	//bool isProcHandled;    //避免重复执行标志位
 	bool bHasDot;
 	uint8_t itemIndex;
 	int32_t range_max;
@@ -331,7 +332,7 @@ struct _ui_Setting
 	struct _tab_module  *_mods_sw[RELAY_NUMS];
 	struct _sw_module  	*_mods_sp[2];
 	lv_obj_t *_ScanObj;
-	viewInfo_t labelGrp[3];
+	viewInfo_t labelGrp[VIEW_SAMPLE_NUMS];
 	uint32_t iSwitchs;
 };
 
@@ -421,9 +422,6 @@ extern void Gui_paramExit(lv_obj_t* root);
 
 extern void Gui_loginInit(void);
 extern void Gui_loginExit(void);
-
-
-
 
 
 extern uint32_t Gui_Basic_GetOffset(uint32_t num, int32_t max, int32_t offset);

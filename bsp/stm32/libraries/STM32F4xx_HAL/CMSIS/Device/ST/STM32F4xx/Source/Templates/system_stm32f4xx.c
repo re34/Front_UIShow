@@ -108,7 +108,12 @@
 /* #define VECT_TAB_SRAM */
 //128 * 1024 (app分区起始地址) ,分区大小768K
 //#define VECT_TAB_OFFSET  0x20000 /*!< Vector Table base offset field. This value must be a multiple of 0x200. */
-#define VECT_TAB_OFFSET  0x00
+#ifdef STM32_FLASH
+#define VECT_TAB_OFFSET  0x20000
+#endif
+#ifdef STM32_BOOTLOADER
+#define VECT_TAB_OFFSET  0x20000
+#endif
 /******************************************************************************/
 
 /**

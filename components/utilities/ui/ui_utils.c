@@ -331,7 +331,7 @@ void spinContent_style_init(uint8_t type, tab_module_t* t_objBox, const char **l
 	lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
 	//spinbox样式
     lv_spinbox_set_range(t_objBox->_mObj, p_attr->range_min, p_attr->range_max);
-	if(type == UI_Type_LD){
+	if(type == UI_Type_DFB){
 		if(p_attr->bHasDot){
 			lv_spinbox_set_digit_format(t_objBox->_mObj, 6, 3);
 			lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)p_attr->_initVal) / 1000);
@@ -409,7 +409,7 @@ static void btnOk_event_cb(lv_event_t* e)
 		{
 			//保存
 			case Dialog_Type_Save:
-				Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_SAVE));
+				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_SAVE));
 			break;
 			case Dialog_Type_TaSave:
 				Gui_SendMessge(uart_mq, MODBUS_TA_SAVE_ADDR, 2, E_Modbus_TA_Write, 0xFF);
