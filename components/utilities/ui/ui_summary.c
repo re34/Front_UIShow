@@ -84,19 +84,43 @@ void Info_TaskUpdate(lv_timer_t* timer)
 		{
 			spinbox_flush_val(_settingUI._mods[i]->_mObj, ui_cfgVal[1 + i].recvDate);
 		}
-		for(i = 0; i < RELAY_NUMS; i++)
+		if(ui.Stat.bIsNeedAllFlush == true)
 		{
-			sw_flush_val(_settingUI._mods_sw[i]->_mObj, i, ui_cfgVal[0].recvDate);
-		}
-		//刷新扫描开关
-		if(!(ui_cfgVal[0].recvDate & (1 << BIT_SCAN)))
-		{
-			lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);
-		}else{
-			lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0x3b67b0), LV_PART_MAIN);
-		}
-		_settingUI.iSwitchs = ui_cfgVal[0].recvDate;
+			for(i = 0; i < RELAY_NUMS; i++)
+			{
+				sw_flush_val(_settingUI._mods_sw[i]->_mObj, i, ui_cfgVal[0].recvDate);
+			}
+			//刷新扫描开关
+			if(!(ui_cfgVal[0].recvDate & (1 << BIT_SCAN)))
+			{
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);
+			}else{
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0x3b67b0), LV_PART_MAIN);
+			}
+			_settingUI.iSwitchs = ui_cfgVal[0].recvDate;
+			if(_settingUI.bIsFirstPwrOn)
+			{
+				_settingUI.bIsFirstPwrOn = false;
+				for(i = 0; i < 2; i++)
+				{
+					switchLock_valInit(_settingUI._mods_sp[i]);
+				}
+			}
+
+		}		
 		return;
+	}
+	//标签页显示倒计时，倒计时的结束后发送自动锁命令
+	if(_settingUI.bIsEntryOneStepLock)
+	{
+		char timeStr[8];
+		lv_snprintf(timeStr, sizeof(timeStr), "%d 秒", _settingUI.timerCntDown--);
+		lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, timeStr);		
+		if(_settingUI.timerCntDown < 0){
+			_settingUI.bIsEntryOneStepLock = false;
+			lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+			lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
+		}			
 	}
 	lv_obj_t *tv_obj = lv_obj_get_parent((lv_obj_t *)timer->user_data);
 	uint8_t index = lv_obj_get_index(lv_tileview_get_tile_act(tv_obj));
@@ -112,7 +136,7 @@ void Info_TaskUpdate(lv_timer_t* timer)
 			viewGrp_Update(&(_settingUI.labelGrp[i]), i);
 		}
 	}
-	//前提是开启自动锁
+	//检测到开启自动锁
 	if(_settingUI.iSwitchs & (1 << BIT_AUTO_LOCK))
 	{
 		//未锁定则一直查看锁定状态，若锁定则更新状态
@@ -130,11 +154,22 @@ void Info_TaskUpdate(lv_timer_t* timer)
 			{	
 				//进入锁定状态，更新所有配置数据
 				ui.Stat.bFirstEntryLock = true;
+				ui.Stat.bIsNeedAllFlush = true;
 				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);
 			    _settingUI._mods_sp[Type_Lock]->_attr._initVal = Lock_Proc_On;
 				lv_anim_start(&_settingUI._mods_sp[Type_Lock]->anim);
 				return;
 			}
+		}		
+	}
+	//检测到关闭自动锁
+	else{
+		if(true == ui.Stat.bFirstEntryLock)
+		{
+			ui.Stat.bFirstEntryLock = false;
+			//关闭自动锁（解除锁定）操作不需要更新开关类数据
+			ui.Stat.bIsNeedAllFlush = false;
+			Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);			
 		}
 	}
 	Gui_SendMessge(uart_mq, 0, MAX_SAMPLE_NUM * 2, E_Modbus_Read, 0);
@@ -290,9 +325,8 @@ void disp_TopInfo_Create(lv_obj_t* parent)
 		ui.Stat.bFirstEntryLock = false;
 	else
 		ui.Stat.bFirstEntryLock = true;
-	ui.Stat.bIsNeedFlush = false;
-	ui.Stat.bIsOccueOnce = true;	
-	//首次刷新数据，避免乱码
+	//首次进入刷新采样及配置数据，采样界面避免乱码	
+	ui.Stat.bIsNeedAllFlush = true;	
 	module_set_usage_value(ui.topInfo.I_module);
 	for(int i = 0; i < MAX_TEMP_NUMS; i++)
 		module_set_usage_value(ui.topInfo.T_module[i]);		
@@ -371,6 +405,7 @@ static void btnHome_event_cb(lv_event_t* event)
 		lv_group_set_editing(lv_group_get_default(), false);
 		lv_group_remove_all_objs(lv_group_get_default());
 		ui_cfgVal[0].recvDate = _settingUI.iSwitchs;
+		_settingUI.bIsEntryOneStepLock = false; //退出界面取消读秒
 		anim_reback = 0;
 		Gui_PageCallback((void *)&id, 1);	
 	}

@@ -280,10 +280,10 @@ void Gui_Style_Init(void)
 	lv_style_set_text_font(&style_tabIcon, &font_symbol_20);
 	//手动类按钮风格
 	lv_style_init(&style_ManualBtn);
-	lv_style_set_obj_size(&style_ManualBtn, 75, 40);
+	lv_style_set_obj_size(&style_ManualBtn, 60, 30);
 	lv_style_set_border_width(&style_ManualBtn, 0);
 	lv_style_set_bg_color(&style_ManualBtn, lv_color_hex(0x3b67b0));
-	lv_style_set_radius(&style_ManualBtn, 20);
+	lv_style_set_radius(&style_ManualBtn, 12);
 	//标签页内容布局
 	lv_style_init(&style_tabContent);
     lv_style_set_pad_hor(&style_tabContent, 8);     //设置左右离外边框的间距
@@ -372,7 +372,6 @@ void spinbox_flush_val(lv_obj_t *obj, uint32_t val)
 {
 	char initStr[7];
 	struct m_attr_t *p_attr = (struct m_attr_t *)obj->user_data;
-
 	if(p_attr->bHasDot){
 		lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)val) / 1000);
 	}else{
@@ -436,14 +435,29 @@ static void btnOk_event_cb(lv_event_t* e)
 				lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
 
 			break;
-			//一键锁定(开机 + 锁定)
-			case Dialog_Type_LockOpenLaser: 
-				lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
-				lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+			//一键锁定(开机 + 发送工作点电流 + 锁定 // 解锁：只解锁)
+			case Dialog_Type_LockOpenLaser: 				
+				if(_settingUI._mods_sp[Type_Lock]->_attr._initVal != Lock_Proc_Off)
+					//若当前处于正在锁定或已锁定, 则立即执行解锁操作
+					lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+				else
+				//开启倒计时
+				{
+					lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+					_settingUI.timerCntDown = DEFAULT_TIME_CNT;
+					_settingUI.bIsEntryOneStepLock = true;
+				}
 			break;
+			//单一锁定
 			default:
 			{
-				//单一锁定：加前提条件，执行锁定时，需先开电源
+				//如果一键锁定正在读秒
+				if(_settingUI.bIsEntryOneStepLock == true)
+				{
+					_settingUI.bIsEntryOneStepLock = false;
+					lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
+				}
+				//加前提条件，执行锁定时，需先开电源
 				if(_settingUI._mods_sp[Type_Power]->_attr._initVal == Power_Proc_On)
 					lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
 				else{

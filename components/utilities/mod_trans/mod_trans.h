@@ -17,6 +17,7 @@
 #define LD_UART_NAME 		"uart6"
 #define LOCK_STATE_ADDR 	5
 #define MODBUS_DFB_CFG_ADDR	20 	 //DFB配置起始寄存器地址
+#define MODBUS_DFB_CFG_I	22
 #define ITEM_ADDR_HEAD		MODBUS_DFB_CFG_ADDR + 2
 #define MAX_SAMPLE_NUM 		10
 #define MAX_CONFIG_NUM		16	 //switch + 15 spinbox

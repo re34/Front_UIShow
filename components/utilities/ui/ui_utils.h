@@ -7,6 +7,10 @@
 
 #define TIME_ON_TRIGGER		10
 #define IDLE_OVERFLOW_TIME 	4	  //4X50 = 200ms空闲发送数据
+#define DEFAULT_TIME_CNT	120
+
+#define ROLE_USER		0
+#define ROLE_DEVELOPER	1
 
 /**
  * @alarm_on                f0f3
@@ -159,11 +163,15 @@ enum E_DialogType
 
 enum E_DFB_ItemIndex
 {
-	Item_Current   = 0,
-	Item_Temper_Lv1	   = 1,
-	Item_Temper_Lv2	   = 2,	
-	Item_Temper_Lv3	   = 3,	
-	Item_PztAmp	   = 4,
+	Item_Current   		= 0,
+	Item_Temper_Lv1	   	= 1,
+	Item_Temper_Lv2	   	= 2,	
+	Item_Temper_Lv3	   	= 3,	
+	Item_PztAmp	= 4,
+	Item_Current_work = 9,
+	Item_Temper_Lv1_work	   = 10,
+	Item_Temper_Lv2_work	   = 11,	
+	Item_Temper_Lv3_work	   = 12,		
 };
 
 
@@ -183,11 +191,7 @@ enum E_TA_WarnIndex
 	Item_Ta_Warn_Tmax	 = 6,
 };
 
-enum E_User_Authority
-{
-	Authority_User      	= 0,
-	Authority_Developer	   = 1,
-};
+
 
 typedef void(*page_init_handle)(lv_obj_t* root);
 typedef void(*page_focus_handle)(lv_obj_t* root);
@@ -290,8 +294,7 @@ struct _ui_info
 	struct
 	{
 		bool bFirstEntryLock;
-		bool bIsOccueOnce;
-		bool bIsNeedFlush;
+		bool bIsNeedAllFlush;
 	} Stat;		
 	lv_timer_t *collect_timer;
 };
@@ -320,6 +323,8 @@ typedef struct _sw_module
 {
 	struct m_attr_t _attr;
     lv_obj_t *_mObj;
+	//新增开关可变标签 2024-2-21
+	lv_obj_t *_titleLabel;
 	lv_anim_t anim;
 }sw_module_t;
 
@@ -327,6 +332,9 @@ typedef struct _sw_module
 struct _ui_Setting
 {
 	bool bIsAdmin;
+	bool bIsEntryOneStepLock;
+	bool bIsFirstPwrOn;
+	int timerCntDown;
     lv_obj_t* _tabCont;
 	struct _tab_module  *_mods[PARAM_ITEM_NUMS_END];
 	struct _tab_module  *_mods_sw[RELAY_NUMS];
@@ -449,6 +457,8 @@ extern void Gui_dialog_Create(void);
 extern void Gui_menuInit(void);
 extern void spinContent_style_init(uint8_t type, tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb);
 extern lv_obj_t *spinBtn_style_init(tab_module_t* t_objBox, lv_event_cb_t event_cb);
+
+extern void switchLock_valInit(sw_module_t* t_swMod);
 
 #endif
 

@@ -50,6 +50,7 @@ static void anim_timer_handle(lv_obj_t *root)
 		lv_timer_enable(false);
 		lv_timer_del(timer_handle);
 		lv_timer_enable(true);
+		_settingUI.bIsFirstPwrOn = true;
 		uint8_t id = PAGE_MAIN;
 		Gui_PageCallback((void *)&id, 1);		
    }
