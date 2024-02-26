@@ -12,6 +12,9 @@
 #define ROLE_USER		0
 #define ROLE_DEVELOPER	1
 
+#define SW_ONESTEP		0
+#define SW_AUTOLOCK		1
+
 /**
  * @alarm_on                f0f3
  * @alarm_off               f1f6
@@ -332,8 +335,10 @@ typedef struct _sw_module
 struct _ui_Setting
 {
 	bool bIsAdmin;
-	bool bIsEntryOneStepLock;
+	bool bIsFirstCd;
+	bool bIsEntryCountDwn;	//进入倒计时
 	bool bIsFirstPwrOn;
+	uint8_t IsOneStepLock;
 	int timerCntDown;
     lv_obj_t* _tabCont;
 	struct _tab_module  *_mods[PARAM_ITEM_NUMS_END];

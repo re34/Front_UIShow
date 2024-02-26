@@ -100,24 +100,32 @@ void Info_TaskUpdate(lv_timer_t* timer)
 			_settingUI.iSwitchs = ui_cfgVal[0].recvDate;
 			if(_settingUI.bIsFirstPwrOn)
 			{
-				_settingUI.bIsFirstPwrOn = false;
+				_settingUI.bIsFirstPwrOn = false;			
 				for(i = 0; i < 2; i++)
 				{
 					switchLock_valInit(_settingUI._mods_sp[i]);
 				}
 			}
-
 		}		
 		return;
 	}
 	//标签页显示倒计时，倒计时的结束后发送自动锁命令
-	if(_settingUI.bIsEntryOneStepLock)
+	if(_settingUI.bIsEntryCountDwn)
 	{
-		char timeStr[8];
-		lv_snprintf(timeStr, sizeof(timeStr), "%d 秒", _settingUI.timerCntDown--);
-		lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, timeStr);		
-		if(_settingUI.timerCntDown < 0){
-			_settingUI.bIsEntryOneStepLock = false;
+		if(_settingUI.bIsFirstCd)
+		{
+			char timeStr[8];
+			
+			lv_snprintf(timeStr, sizeof(timeStr), "%d秒", _settingUI.timerCntDown--);
+			lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, timeStr);		
+			if(_settingUI.timerCntDown < 0){
+				_settingUI.bIsEntryCountDwn = false;				
+				_settingUI.bIsFirstCd = false;
+				lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+				lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
+			}
+		}else{
+			_settingUI.bIsEntryCountDwn = false;
 			lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
 			lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
 		}			
@@ -405,7 +413,7 @@ static void btnHome_event_cb(lv_event_t* event)
 		lv_group_set_editing(lv_group_get_default(), false);
 		lv_group_remove_all_objs(lv_group_get_default());
 		ui_cfgVal[0].recvDate = _settingUI.iSwitchs;
-		_settingUI.bIsEntryOneStepLock = false; //退出界面取消读秒
+		_settingUI.bIsEntryCountDwn = false; //退出界面取消读秒
 		anim_reback = 0;
 		Gui_PageCallback((void *)&id, 1);	
 	}

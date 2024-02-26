@@ -51,6 +51,8 @@ static void anim_timer_handle(lv_obj_t *root)
 		lv_timer_del(timer_handle);
 		lv_timer_enable(true);
 		_settingUI.bIsFirstPwrOn = true;
+		_settingUI.bIsFirstCd = true;
+		_settingUI.IsOneStepLock = SW_ONESTEP;		
 		uint8_t id = PAGE_MAIN;
 		Gui_PageCallback((void *)&id, 1);		
    }

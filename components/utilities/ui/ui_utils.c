@@ -427,13 +427,10 @@ static void btnOk_event_cb(lv_event_t* e)
 				lv_tabview_set_act(_settingUI._tabCont, 0, LV_ANIM_ON);
 			break;
 			//单一开关机
-			case Dialog_Type_Power:
-				//关机操作需要先解锁
-				if(_settingUI._mods_sp[Type_Power]->_attr._initVal == Power_Proc_On 
-					&& _settingUI._mods_sp[Type_Lock]->_attr._initVal >= Lock_Proc_On)
-					lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);				
+			case Dialog_Type_Power:			
 				lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
-
+				_settingUI.iSwitchs &= ~(1 << BIT_SCAN);
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);	
 			break;
 			//一键锁定(开机 + 发送工作点电流 + 锁定 // 解锁：只解锁)
 			case Dialog_Type_LockOpenLaser: 				
@@ -445,16 +442,16 @@ static void btnOk_event_cb(lv_event_t* e)
 				{
 					lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
 					_settingUI.timerCntDown = DEFAULT_TIME_CNT;
-					_settingUI.bIsEntryOneStepLock = true;
+					_settingUI.bIsEntryCountDwn = true;
 				}
 			break;
 			//单一锁定
 			default:
 			{
 				//如果一键锁定正在读秒
-				if(_settingUI.bIsEntryOneStepLock == true)
+				if(_settingUI.bIsEntryCountDwn == true)
 				{
-					_settingUI.bIsEntryOneStepLock = false;
+					_settingUI.bIsEntryCountDwn = false;
 					lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
 				}
 				//加前提条件，执行锁定时，需先开电源

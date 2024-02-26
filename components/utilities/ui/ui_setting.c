@@ -43,7 +43,7 @@ const char* label_list[PARAM_ITEM_NUMS_END] = {
 	"三级温度设置(℃)",
 	"电流扫描幅值(mA)",
 	"调制相位",
-	"调制频率(HZ)",
+	"调制频率(Hz)",
 /***********开发者*******************/
 	"电流上限值(mA)",
 	"温度上限值(℃)",
@@ -69,10 +69,7 @@ const char* titleName[3] = {
 	"自动锁定",	
 };
 
-const char* roleName[2] = {
-	"用户",
-	"开发者",
-};	
+	
 
 const char *btn_names[2] = {
 	MY_ICON_MANUAL_UNLOCK,
@@ -152,12 +149,11 @@ void spinbox_judge_val(uint8_t index, bool enable)
 		spinbox_Send_updateVal(index, nowVal);
 }
 
-void Func_IsOnOneStepLock(void)
+void Func_SendWorkCurrent(uint8_t *flag)
 {
-	if(_settingUI.bIsAdmin == ROLE_USER)
+	if(*flag == Dialog_Type_LockOpenLaser)
 	{
 		int workVal = lv_spinbox_get_value(_settingUI._mods[Item_Current_work]->_mObj);
-		//spinbox_judge_val(uint8_t index, bool enable)
 		lv_spinbox_set_value(_settingUI._mods[Item_Current]->_mObj, workVal);
 		Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_I, 2, E_Modbus_Write, workVal);
 	}
@@ -433,7 +429,7 @@ static void switchLock_event_cb(lv_event_t *e)
 		{
 			if(p_attr->itemIndex)
 			{
-				if(_settingUI.bIsAdmin == ROLE_DEVELOPER)
+				if(_settingUI.IsOneStepLock == SW_AUTOLOCK)
 				{
 					lv_label_set_text(ui_Dialog.title, 
 									 (_settingUI.iSwitchs & (1 << BIT_AUTO_LOCK))?"是否解除锁定?" : "是否开启自动锁?");
@@ -445,14 +441,22 @@ static void switchLock_event_cb(lv_event_t *e)
 				}
 			}else{
 				//一键锁定中禁止开关机操作
-				if(_settingUI.bIsEntryOneStepLock == true)
+				if(_settingUI.bIsEntryCountDwn == true)
 				{
 					lv_label_set_text(ui_Dialog.title, "一键锁定中,请勿操作!");
 					ui_Dialog.bCheckFlag = Dialog_Type_Tips;
 				}else{
-					lv_label_set_text(ui_Dialog.title, 
-						 (_settingUI.iSwitchs & (1 << BIT_PowerSw))?"是否关闭电源?" : "是否打开电源?");
-					ui_Dialog.bCheckFlag = Dialog_Type_Power;
+					if(_settingUI._mods_sp[Type_Power]->_attr._initVal == Power_Proc_On 
+						&& _settingUI._mods_sp[Type_Lock]->_attr._initVal >= Lock_Proc_On)
+					{
+						lv_label_set_text(ui_Dialog.title, "请先解除锁定");
+						ui_Dialog.bCheckFlag = Dialog_Type_Tips;						
+					}
+					else{
+						lv_label_set_text(ui_Dialog.title, 
+							 (_settingUI.iSwitchs & (1 << BIT_PowerSw))?"是否关闭电源?" : "是否打开电源?");
+						ui_Dialog.bCheckFlag = Dialog_Type_Power;
+					}
 				}
 			}
 			Gui_DialogShow(&ui_Dialog, NULL, ui_Dialog.bCheckFlag);
@@ -463,13 +467,13 @@ static void switchLock_event_cb(lv_event_t *e)
 		if(p_attr->itemIndex == Type_Power)//开关机键功能
 		{
 			if(ui_Dialog.bCheckFlag == Dialog_Type_LockOpenLaser)
-			{		
-				//存在已开机 未锁定的情况
+			{						
 				if(p_attr->_initVal ^ _settingUI._mods_sp[Type_Lock]->_attr._initVal)
 				{
+					//已开机 未锁定的情况
 					if(p_attr->_initVal)
 					{
-						Func_IsOnOneStepLock();
+						Func_SendWorkCurrent(&ui_Dialog.bCheckFlag);
 						return;
 					}
 				}
@@ -481,12 +485,13 @@ static void switchLock_event_cb(lv_event_t *e)
 				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);
 				//新增关闭电源，电流降为0
 				lv_spinbox_set_value(_settingUI._mods[Item_Current]->_mObj, 0);
+				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_I, 2, E_Modbus_Write, 0);
 			}else{
 				p_attr->_initVal = Power_Proc_On;
 				_settingUI.iSwitchs = (_settingUI.iSwitchs & 0x7FF)|(1 << BIT_PowerSw); 
 				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs);
 				//一键锁定需要发送工作点电流
-				Func_IsOnOneStepLock();			
+				Func_SendWorkCurrent(&ui_Dialog.bCheckFlag);			
 			}			
 			lv_anim_start(&_settingUI._mods_sp[p_attr->itemIndex]->anim);			
 		}
@@ -724,17 +729,15 @@ static void btnRoleSw_event_cb(lv_event_t* e)
 {
 	if(e->code == LV_EVENT_CLICKED)
 	{
-		lv_obj_t *icon = lv_obj_get_child(e->target, 0);
-		if(_settingUI.bIsAdmin == ROLE_USER){
-			_settingUI.bIsAdmin = ROLE_DEVELOPER;
+		if(_settingUI.IsOneStepLock == SW_AUTOLOCK)
+			_settingUI.IsOneStepLock = SW_ONESTEP;			
+		else{
 			//正在读秒则停止读秒
-			if(_settingUI.bIsEntryOneStepLock)
-				_settingUI.bIsEntryOneStepLock = false;
-		}else{
-			_settingUI.bIsAdmin = ROLE_USER;
+			if(_settingUI.bIsEntryCountDwn)
+				_settingUI.bIsEntryCountDwn = false;
+			_settingUI.IsOneStepLock = SW_AUTOLOCK;
 		}
-		lv_label_set_text(icon, roleName[_settingUI.bIsAdmin]);
-		lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, titleName[_settingUI.bIsAdmin + 1]);
+		lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, titleName[_settingUI.IsOneStepLock + 1]);
 	}
 }
 
@@ -765,9 +768,9 @@ void Func_ManualBtnInit(lv_obj_t *parent, uint8_t index)
 			lv_obj_set_style_bg_color(cont, lv_color_hex(0xd74047), LV_PART_MAIN);
 	//模式切换按钮
 	}else{
-		lv_label_set_text(Icon, roleName[_settingUI.bIsAdmin]);
+		lv_label_set_text(Icon, "切换锁");
 		//设置功能键名称
-		lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, titleName[_settingUI.bIsAdmin + 1]);
+		lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, titleName[_settingUI.IsOneStepLock + 1]);
 		lv_obj_align(cont, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
 		lv_obj_add_event_cb(cont, btnRoleSw_event_cb, LV_EVENT_CLICKED, NULL);		
 		return;
