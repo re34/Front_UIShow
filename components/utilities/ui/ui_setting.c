@@ -93,13 +93,6 @@ void spinbox_judge_val(uint8_t index, bool enable)
 				ret = -1;
 			}	
 		break;
-		case Item_PztBias:
-			limitVal = lv_spinbox_get_value(_settingUI._mods[index - 1]->_mObj);
-			if((nowVal + limitVal) > PZT_AMP_MAX)
-			{
-				ret = -1;						
-			}
-		break;
 		default:				
 		break;
 	}
@@ -288,17 +281,17 @@ tab_module_t *subTab_create(lv_obj_t * parent, uint8_t index, uint8_t tabType, v
 			t_tabBox->_attr.bHasDot = false;
 			t_tabBox->_attr.range_min = 1;
 			t_tabBox->_attr.range_max = 6000000;
-		//PZT扫描偏置
+		//PZT扫描偏置 100V
 		}else if(index == 4)
 		{
 			t_tabBox->_attr.bHasDot = true;
-			t_tabBox->_attr.range_max = 14000;
+			t_tabBox->_attr.range_max = 100000;
 		}
-		//pzt扫描幅值		
+		//pzt扫描幅值 100V
 		else if(index == 3)
 		{
 			t_tabBox->_attr.bHasDot = true;
-			t_tabBox->_attr.range_max = 7000;
+			t_tabBox->_attr.range_max = 100000;
 		}
 		//dds相位
 		else if(index == 5 || index == 14)

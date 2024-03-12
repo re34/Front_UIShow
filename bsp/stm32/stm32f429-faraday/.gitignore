@@ -38,4 +38,6 @@ DebugConfig/
 RTE/
 settings/
 *.uvguix*
+*.uvoptx
+*.uvprojx
 cconfig.h

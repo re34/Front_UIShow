@@ -151,8 +151,8 @@ void sampleGrp_MainCreate(lv_obj_t* parent)
 	lv_obj_set_style_pad_row(parent, 6, LV_PART_MAIN); 	//设置各item之间的行间距
 	const char* TextList[4] =
 	{
-		"采样电流(A)",
-		"设置电流(A)",
+		"采样电流(mA)",
+		"设置电流(mA)",
 		"采样温度(℃)",
 		"设置温度(℃)",
 	};
@@ -220,7 +220,10 @@ void viewBar_Update(viewInfo_t *info, uint8_t index)
 	//if(ret < 0)
 	//	lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
 	//else
-		lv_label_set_text_fmt(info->Bar_icon, "%.2f", (index > 1)?((float)tmp / 10):((float)tmp / 1000));
+	if(index > 1)
+		lv_label_set_text_fmt(info->Bar_icon, "%.2f", (float)tmp / 10);
+	else
+		lv_label_set_text_fmt(info->Bar_icon, "%d", tmp);		
 }
 
 
