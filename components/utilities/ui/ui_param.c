@@ -206,7 +206,7 @@ tab_module_t *TA_SubCreate(lv_obj_t * parent, uint8_t inx)
 			case ScanItem_amp:
 				t_tabBox->_attr.bHasDot = true;
 				t_tabBox->_attr.range_min = 1000;
-				t_tabBox->_attr.range_max = 50000;
+				t_tabBox->_attr.range_max = 100000;
 			break;
 			case ScanItem_freq:
 				t_tabBox->_attr.bHasDot = false;

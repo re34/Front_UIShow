@@ -197,7 +197,7 @@ static void HW_Ad5541SetWave(M_DacChipOpr *pDacChip, uint8_t chipID, uint16_t da
 /* 由高压PZT幅值(mV)转换成芯片寄存器值 */
 uint16_t HvFunc_Amp2RegVal(const long mvData)
 {
-    return (uint16_t)(mvData / 50000.0 * 65535);
+    return (uint16_t)(mvData / 100000.0 * 65535);
 }
 
 
@@ -221,20 +221,29 @@ void Task_ScanOrReadProc(void* parameter)
 	uint32_t i32PztRegBias = 0;
 	uint32_t i32PztRegAmp = 0;
 	
+	//获取y轴正坐标以上的幅值
+	uint32_t i32yPostive = 0;
+	
 	M_DacChipOpr *pDacChip = GetMatchDacChip(g_tLaserManager.mod_dac, "dac_ad5541");
-
 	for(;;)
 	{
 		//挂起线程，接收串口信号 或任务信号(执行1次)  
 		uwRet = rt_sem_take(&scanSw_Sem, RT_WAITING_FOREVER);
 		if(RT_EOK == uwRet && s_Para->chipVal.scanState)
 		{
-			i32PztRegBias = HvFunc_Bias2RegVal(s_Para->chipVal.bias);
 			i32PztRegAmp = HvFunc_Amp2RegVal(s_Para->chipVal.scanAmplitude);
+			i32PztRegBias = HvFunc_Bias2RegVal(s_Para->chipVal.bias);
 			HW_AD5541Write(pDacChip, ChipID_HvScan_Bias, i32PztRegBias);
 			HW_AD5541Write(pDacChip, ChipID_HvScan_DecBias, (i32PztRegAmp + 1) / 2);
-			HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, 0);
-			yStepLen = i32PztRegAmp * s_Para->chipVal.scanFreq / 10000 + 1;
+			//当幅值的一半大于  偏置时， 获取y轴正坐标以上的
+			if(s_Para->chipVal.bias < (s_Para->chipVal.scanAmplitude / 2))
+			{
+				i32yPostive = HvFunc_Amp2RegVal(s_Para->chipVal.scanAmplitude / 2 + s_Para->chipVal.bias);
+			}else{
+				i32yPostive = i32PztRegAmp;
+			}
+			yStepLen = i32yPostive * s_Para->chipVal.scanFreq / 10000 + 1;	
+
 			while(1)
 			{
 				int32_t tmpval;
@@ -243,7 +252,7 @@ void Task_ScanOrReadProc(void* parameter)
 					if(s_Para->chipVal.scanState == State_In_ScanClose)
 					{
 						//退出当前循环
-						for (tmpval = 0; tmpval <= (i32PztRegAmp / 2); tmpval += yStepLen)
+						for (tmpval = i32PztRegAmp - i32yPostive; tmpval <= (i32PztRegAmp / 2); tmpval += yStepLen)
 						{
 							HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, tmpval);
 							rt_hw_us_delay(42);
@@ -254,20 +263,27 @@ void Task_ScanOrReadProc(void* parameter)
 					i32PztRegAmp = HvFunc_Amp2RegVal(s_Para->chipVal.scanAmplitude);
 					HW_AD5541Write(pDacChip, ChipID_HvScan_Bias, i32PztRegBias);
 					HW_AD5541Write(pDacChip, ChipID_HvScan_DecBias, (i32PztRegAmp + 1) / 2);
+					if(s_Para->chipVal.bias < (s_Para->chipVal.scanAmplitude / 2))
+					{
+						i32yPostive = HvFunc_Amp2RegVal(s_Para->chipVal.scanAmplitude / 2 + s_Para->chipVal.bias);
+					}else{
+						i32yPostive = i32PztRegAmp;
+					}
 					//计算步进值 = 幅值/ 需要描点的数量
-					yStepLen = i32PztRegAmp * s_Para->chipVal.scanFreq / 10000 + 1;
+					yStepLen = i32yPostive * s_Para->chipVal.scanFreq / 10000 + 1;
 				}
-
-			    for (tmpval = 0; tmpval <= i32PztRegAmp; tmpval += yStepLen)
+				
+			    for (tmpval = (i32PztRegAmp - i32yPostive); tmpval <= i32PztRegAmp; tmpval += yStepLen)
 			    {
 			        HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, tmpval);
 			        rt_hw_us_delay(42);
 			    }
-			    for(tmpval = i32PztRegAmp; tmpval >= 0; tmpval -= yStepLen)
+			    for(tmpval = i32PztRegAmp; tmpval >= ((int32_t)(i32PztRegAmp - i32yPostive)); tmpval -= yStepLen)
 			    {
-					HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, tmpval);         
+					HW_AD5541Write(pDacChip, ChipID_HvScan_Amp, tmpval);	
 			       	rt_hw_us_delay(42);
-			    }				
+			    }
+			
 			}
 		}
 	}
