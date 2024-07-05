@@ -6,6 +6,11 @@ struct _Ta_Setting _taUI;
 
 #include "ui_utils.h"
 
+
+#define  INC_OVER_LIMIT		0
+#define  DEC_OVER_LIMIT 	1
+
+
 const char* Ta_list[TA_T_NUMS_END] = {
     "电流设置(mA)",
 	"电流工作点(mA)",		
@@ -24,18 +29,75 @@ const char* sample_icons[4] = {
 };
 
 
+static void spinbox_Send_updateVal(uint8_t index, int32_t value)
+{
+	ui_taVal[index].recvDate = value;
+	Gui_SendMessge(uart_mq,
+					MODBUS_TA_CFG_ADDR + 2 * index,
+					2,
+					E_Modbus_TA_Write,
+					value);
+}
+
+
+
+void ta_spinbox_judge_val(uint8_t index)
+{
+	int32_t warnVal_Min = 0, warnVal_Max = 0;
+	int err_type = INC_OVER_LIMIT;
+	int ret = 0;
+	int32_t nowVal = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
+	switch(index)
+	{
+		case Item_Ta_Config_I:	//设置电流
+		case Item_Ta_Work_I:	//设置电流工作点
+			 warnVal_Max = lv_spinbox_get_value(_taUI._mods[Item_Ta_Warn_Imax]->_mObj);
+			 if(nowVal >= warnVal_Max)
+			 {
+				err_type = INC_OVER_LIMIT;
+				ret = -1;
+			 }
+		break;
+		case Item_Ta_Config_T:	//设置温度
+		case Item_Ta_Work_T:	//设置温度工作点
+			 warnVal_Max = lv_spinbox_get_value(_taUI._mods[Item_Ta_Warn_Tmax]->_mObj);
+			 warnVal_Min = lv_spinbox_get_value(_taUI._mods[Item_Ta_Warn_Tmin]->_mObj);
+			 if(nowVal >= warnVal_Max )
+			 {
+				err_type = INC_OVER_LIMIT;
+				ret = -1;
+			 }else if(nowVal < warnVal_Min)
+			 {
+				err_type = DEC_OVER_LIMIT;
+				ret = -1;
+			 }
+		break;
+		default:
+		break;
+	}
+	//值在正常范围内则发送
+	if(!ret)
+		spinbox_Send_updateVal(index, nowVal);
+	else
+	{
+		if(err_type == INC_OVER_LIMIT)
+			lv_spinbox_decrement(_taUI._mods[index]->_mObj);
+		else
+			lv_spinbox_increment(_taUI._mods[index]->_mObj);
+	}
+}
+
+
+/*********************************加减按钮事件*************************************************/
+
 static void param_inc_event_cb(lv_event_t * e)
 {
     if(e->code == LV_EVENT_SHORT_CLICKED) {
 		lv_obj_t *obj = lv_event_get_target(e);
 		uint8_t index = *((uint8_t *)obj->user_data);
         lv_spinbox_increment(_taUI._mods[index]->_mObj);	
-		ui_taVal[index].recvDate = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
-		Gui_SendMessge(uart_mq, 
-						MODBUS_TA_CFG_ADDR + 2 * index, 
-						2, 
-						E_Modbus_TA_Write, 
-						ui_taVal[index].recvDate);		
+		ta_spinbox_judge_val(index);
+
     }
 }
 
@@ -45,26 +107,28 @@ static void param_dec_event_cb(lv_event_t * e)
 		lv_obj_t *obj = lv_event_get_target(e);
 		uint8_t index = *((uint8_t *)obj->user_data);
 		lv_spinbox_decrement(_taUI._mods[index]->_mObj);
-		ui_taVal[index].recvDate = lv_spinbox_get_value(_taUI._mods[index]->_mObj);
-		Gui_SendMessge(uart_mq, 
-						MODBUS_TA_CFG_ADDR + 2 * index, 
-						2, 
-						E_Modbus_TA_Write, 
-						ui_taVal[index].recvDate);
+		ta_spinbox_judge_val(index);
     }
 }
 
+/*********************************spinbox 样式及事件*************************************************/
 static void parambox_event_cb(lv_event_t * e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *obj = lv_event_get_target(e);
+	struct m_attr_t *p_attr = (struct m_attr_t *)obj->user_data;
+
     if (code == LV_EVENT_CLICKED)
     {
 		lv_group_focus_obj(obj);
 		lv_obj_add_state(obj, LV_STATE_FOCUSED);
 		lv_group_set_editing(lv_group_get_default(), true);	
+		//设置要发送的目标序号
+		_taUI._taFlow->targetInx = p_attr->itemIndex;
     }
 }
+
+
 
 void paramBox_style_init(tab_module_t* t_objBox)
 {
@@ -78,6 +142,8 @@ void paramBox_style_init(tab_module_t* t_objBox)
 	lv_obj_align_to(btn, t_objBox->_mObj, LV_ALIGN_OUT_LEFT_MID, -8, 0);
 	lv_obj_set_style_bg_img_src(btn, LV_SYMBOL_MINUS, 0);
 }
+
+
 
 
 tab_module_t *TA_SubCreate(lv_obj_t * parent, uint8_t inx)
@@ -272,6 +338,24 @@ void TA_TaskUpdate(lv_timer_t* timer)
 }
 
 
+/*********************************旋转编码器或实体按钮 超时发送事件*************************************************/
+
+static void Task_dataTimeOutSend(lv_timer_t* timer)
+{
+	flow_Sender_t *pTag = (flow_Sender_t *)timer->user_data;
+
+	if(++pTag->idleCnt > IDLE_OVERFLOW_TIME)
+	{
+		pTag->idleCnt = 0;
+		if(pTag->bIsDataSend == false)
+		{
+			pTag->bIsDataSend = true;
+			//对值进行判断后 再决定发送
+			ta_spinbox_judge_val(pTag->targetInx);
+		}
+	}
+}
+
 
 
 void Gui_paramInit(lv_obj_t* root)
@@ -287,6 +371,22 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_style_bg_color(root, lv_color_hex(0x20253b), LV_PART_MAIN);
 	_taUI._taCont = root;
 	Gui_AddToIndevGroup(root);
+
+	/*********************************************
+	*  定时器 ---- 编码器及按键超时发送
+	*********************************************/
+#if defined(RT_USING_ENCODER_INPUTDEV) || defined(RT_USING_KEYPAD_INPUTDEV)
+	flow_Sender_t *_dSender = (flow_Sender_t *)rt_calloc(1, sizeof(flow_Sender_t));
+	if(RT_NULL == _dSender)
+	{
+	    rt_kprintf("Encoder malloc timeOver sender fail\n");
+			return ;
+	}
+	_dSender->flewTimer = lv_timer_create(Task_dataTimeOutSend, 50, (void *)_dSender);
+	lv_timer_pause(_dSender->flewTimer);
+	_taUI._taFlow = _dSender;
+#endif
+
 	/*************************************************************************
 	* (一) 采样显示区
 	**************************************************************************/
@@ -392,6 +492,14 @@ void Gui_paramExit(lv_obj_t* root)
 		lv_timer_pause(_taUI.sample_timer);
 		lv_timer_del(_taUI.sample_timer);
 	}	
+#if defined(RT_USING_ENCODER_INPUTDEV) || defined(RT_USING_KEYPAD_INPUTDEV)
+	if(_taUI._taFlow != NULL)
+	{
+		lv_timer_pause(_taUI._taFlow->flewTimer);
+		lv_timer_del(_taUI._taFlow->flewTimer);
+		rt_free(_taUI._taFlow);
+	}
+#endif
 	for(int i = 0; i < TA_T_NUMS_END; i++)
 	{
 		rt_free(_taUI._mods[i]);			

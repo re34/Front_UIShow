@@ -40,7 +40,7 @@ static void enc_Press_callback(void *args)
 	rt_sem_release(&m_Encoder->IrqSem);
 #else
 	//弹出对话框或直接发送
-	if(ui_Dialog.cont != NULL)
+	if(ui_Dialog.cont != NULL && _settingUI.bIsUIon)
 	{
 		if(_settingUI.iSwitchs & (1 << BIT_AUTO_LOCK))
 			lv_label_set_text(ui_Dialog.title, "是否解除锁定?");
@@ -49,6 +49,7 @@ static void enc_Press_callback(void *args)
 		Gui_DialogShow(&ui_Dialog, NULL, Dialog_Type_LockOpenLaser);
 	}	
 #endif
+	return;
 }
 
 

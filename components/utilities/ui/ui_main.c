@@ -256,6 +256,7 @@ void Gui_mainInit(lv_obj_t *root)
 	lv_obj_add_event_cb(root, ui_MenuEventCb, LV_EVENT_FOCUSED, NULL);
 	//加入到旋转编码器
 	Gui_AddToIndevGroup(root);
+	//禁止触屏，防止动画过程中误触情况发生
 	lv_indev_enable(ts_indev_obj, false);
 	//添加状态栏
 	if(menu_bar == NULL)

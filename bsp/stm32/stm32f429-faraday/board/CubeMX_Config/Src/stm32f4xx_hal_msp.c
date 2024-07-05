@@ -334,6 +334,77 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
 }
 
 /**
+* @brief TIM_Encoder MSP Initialization
+* This function configures the hardware resources used in this example
+* @param htim_encoder: TIM_Encoder handle pointer
+* @retval None
+*/
+void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* htim_encoder)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	if(htim_encoder->Instance == TIM2)
+	{
+		__HAL_RCC_TIM2_CLK_ENABLE();
+
+		__HAL_RCC_GPIOA_CLK_ENABLE();
+		/**TIM2 GPIO Configuration
+		PA0/WKUP     ------> TIM2_CH1
+		PA1     ------> TIM2_CH2
+		*/
+		GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+		HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	}else if(htim_encoder->Instance == TIM4)
+	{
+		__HAL_RCC_TIM4_CLK_ENABLE();
+
+		__HAL_RCC_GPIOD_CLK_ENABLE();
+		/**TIM4 GPIO Configuration
+		PD12     ------> TIM4_CH1
+		PD13     ------> TIM4_CH2
+		*/
+		GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		GPIO_InitStruct.Alternate = GPIO_AF2_TIM4;
+		HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+  }
+
+}
+
+/**
+* @brief TIM_Encoder MSP De-Initialization
+* This function freeze the hardware resources used in this example
+* @param htim_encoder: TIM_Encoder handle pointer
+* @retval None
+*/
+void HAL_TIM_Encoder_MspDeInit(TIM_HandleTypeDef* htim_encoder)
+{
+  if(htim_encoder->Instance==TIM2)
+  {
+    __HAL_RCC_TIM2_CLK_DISABLE();
+
+    /**TIM2 GPIO Configuration
+    PA0/WKUP     ------> TIM2_CH1
+    PA1     ------> TIM2_CH2
+    */
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0|GPIO_PIN_1);
+
+  }else if(htim_encoder->Instance==TIM4)
+  {
+    __HAL_RCC_TIM4_CLK_DISABLE();
+    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_12|GPIO_PIN_13);
+
+
+  }
+
+}
+
+/**
 * @brief UART MSP Initialization
 * This function configures the hardware resources used in this example
 * @param huart: UART handle pointer

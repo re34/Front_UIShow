@@ -37,7 +37,7 @@
 #define MAX_CONFIG_NUM		16	 //switch + 15 spinbox
 
 //TA
-#define TA_UART_NAME 				"uart2"
+#define TA_UART_NAME 				"uart3"
 #define MODBUS_TA_CFG_ADDR			1	 //ta配置起始寄存器地址
 #define MODBUS_TA_SAVE_ADDR			15	 //ta保存起始寄存器地址
 #define MODBUS_TA_SAMPLE_ADDR		17	 //ta采样起始寄存器地址

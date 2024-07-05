@@ -173,6 +173,15 @@ enum E_TA_ItemIndex
 	Item_Ta_Setting_T    = 3,
 };
 
+
+enum E_TA_ConfigIndex
+{
+	Item_Ta_Config_I  	 = 0,
+	Item_Ta_Work_I  	 = 1,
+	Item_Ta_Config_T	 = 3,
+	Item_Ta_Work_T    	 = 4,
+};
+
 enum E_TA_WarnIndex
 {
 	Item_Ta_Warn_Imax  	 = 2,
@@ -323,8 +332,20 @@ typedef struct _sw_module
 }sw_module_t;
 
 
+typedef struct _flow_Sender
+{
+	bool bIsTimerRun;
+	bool bIsDataSend;
+	bool bIsIncEnabled;
+	uint32_t idleCnt;
+	uint8_t targetInx;
+	lv_timer_t *flewTimer;
+}flow_Sender_t;
+
+
 struct _ui_Setting
 {
+	bool bIsUIon;		
 	bool bIsAdmin;
     lv_obj_t* _tabCont;
 	struct _tab_module  *_mods[PARAM_ITEM_NUMS_END];
@@ -333,6 +354,9 @@ struct _ui_Setting
 	lv_obj_t *_ScanObj;
 	viewInfo_t labelGrp[3];
 	uint32_t iSwitchs;
+#if defined(RT_USING_ENCODER_INPUTDEV) || defined(RT_USING_KEYPAD_INPUTDEV)
+	flow_Sender_t *_dataFlow;
+#endif
 };
 
 
@@ -342,18 +366,13 @@ struct _Ta_Setting
 	struct _tab_module  *_mods[TA_T_NUMS_END];
 	viewInfo_t labelGrp[4];
 	lv_timer_t *sample_timer;
+#if defined(RT_USING_ENCODER_INPUTDEV) || defined(RT_USING_KEYPAD_INPUTDEV)
+	flow_Sender_t *_taFlow;
+#endif
 };
 
 
-typedef struct _enc_flewChk
-{
-	bool bIsTimerRun;
-	bool bIsDataSend;
-	bool bIsIncEnabled;
-	uint32_t idleCnt;
-	uint8_t targetInx;
-	lv_timer_t *enc_flewTimer;
-}enc_flewChk_t;
+
 
 
 struct _login_info

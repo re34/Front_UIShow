@@ -65,7 +65,6 @@ const char* view_icons[3] = {
 };
 
 struct _ui_Setting _settingUI;
-enc_flewChk_t enc_Chker;
 
 
 
@@ -121,18 +120,6 @@ void sw_flush_val(lv_obj_t *obj, uint8_t index, uint32_t val)
 }
 
 
-void spinbox_overFlow_send(bool enable)
-{
-	enc_Chker.idleCnt = 0;
-	enc_Chker.bIsDataSend = false;
-	enc_Chker.bIsIncEnabled = enable;
-	if(enc_Chker.bIsTimerRun == false)
-	{
-		enc_Chker.bIsTimerRun = true;
-		//开启空闲超时检测
-		lv_timer_resume(enc_Chker.enc_flewTimer);
-	}
-}
 
 
 /*****************************************************************************************/
@@ -180,7 +167,7 @@ static void spinbox_event_cb(lv_event_t * e)
 		lv_obj_add_state(obj, LV_STATE_FOCUSED);
 		lv_group_set_editing(lv_group_get_default(), true);	
 		//设置要发送的目标序号
-		enc_Chker.targetInx = p_attr->itemIndex;
+		_settingUI._dataFlow->targetInx = p_attr->itemIndex;
     }	
 	else if(code == LV_EVENT_KEY)
 	{
@@ -196,10 +183,10 @@ static void spinbox_event_cb(lv_event_t * e)
 			**************************************/
 			//更新数据
 			spinbox_Send_updateVal(p_attr->itemIndex, s_spinbox->value);
-			if(enc_Chker.bIsTimerRun == true)
+			if(_settingUI._dataFlow->bIsTimerRun == true)
 			{
-				lv_timer_pause(enc_Chker.enc_flewTimer);
-				enc_Chker.bIsTimerRun = false;
+				lv_timer_pause(_settingUI._dataFlow->flewTimer);
+				_settingUI._dataFlow->bIsTimerRun = false;
 			}
 		}		
 	}
@@ -597,10 +584,10 @@ static void btnSample_event_cb(lv_event_t* event)
 		* lv_timer_pause(_settingUI.lock_monitor);
 		*****************************************/
 		//关闭超时检查
-		if(enc_Chker.bIsTimerRun == true)
+		if(_settingUI._dataFlow->bIsTimerRun == true)
 		{
-			lv_timer_pause(enc_Chker.enc_flewTimer);
-			enc_Chker.bIsTimerRun = false;
+			lv_timer_pause(_settingUI._dataFlow->flewTimer);
+			_settingUI._dataFlow->bIsTimerRun = false;
 		}
 	}
 }
@@ -693,9 +680,9 @@ void Func_ManualBtnInit(lv_obj_t *parent, uint8_t index)
 /***************************************************************
 * 
 *****************************************************************/
-void Task_cmdTimeOutSend(lv_timer_t* timer)
+static void Task_cmdTimeOutSend(lv_timer_t* timer)
 {
-	enc_flewChk_t *pTag = (enc_flewChk_t *)timer->user_data;
+	flow_Sender_t *pTag = (flow_Sender_t *)timer->user_data;
 
 	if(++pTag->idleCnt > IDLE_OVERFLOW_TIME)
 	{
@@ -805,16 +792,24 @@ static void tabBtn_event_cb(lv_event_t * e)
 void setting_tile_init(lv_obj_t *parent)
 {
     int i = 0;
+	_settingUI.bIsUIon = 1;
 	_settingUI.iSwitchs = ui_cfgVal[0].recvDate;
 	//默认主题(字体大小，及颜色)
 	lv_theme_default_init(NULL, lv_color_hex(0x29a6ac), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
 	/*********************************************
-	*  定时器 ---- 编码器超时发送
+	*  定时器 ---- 编码器及按键超时发送
 	*********************************************/
-	rt_memset((void *)&enc_Chker, 0, sizeof(enc_Chker));
-	enc_Chker.enc_flewTimer = lv_timer_create(Task_cmdTimeOutSend, 50, (void *)&enc_Chker);
-	lv_timer_pause(enc_Chker.enc_flewTimer);	
-
+#if defined(RT_USING_ENCODER_INPUTDEV) || defined(RT_USING_KEYPAD_INPUTDEV)
+	flow_Sender_t *_dSender = (flow_Sender_t *)rt_calloc(1, sizeof(flow_Sender_t));
+	if(RT_NULL == _dSender)
+	{
+	    rt_kprintf("Encoder malloc timeOver sender fail\n");
+		return;
+	}
+	_dSender->flewTimer = lv_timer_create(Task_cmdTimeOutSend, 50, (void *)_dSender);
+	lv_timer_pause(_dSender->flewTimer);
+	_settingUI._dataFlow = _dSender;
+#endif
 	/*********************************************
 	* (二) .添加分页菜单
 	*********************************************/
@@ -938,10 +933,16 @@ void setting_tile_exit(void)
 	{
 		rt_free(_settingUI._mods_sp[i]);						
 	}
-	if(enc_Chker.enc_flewTimer != NULL){
-		lv_timer_pause(enc_Chker.enc_flewTimer);
-		lv_timer_del(enc_Chker.enc_flewTimer);
+#if defined(RT_USING_ENCODER_INPUTDEV) || defined(RT_USING_KEYPAD_INPUTDEV)
+	if(_settingUI._dataFlow != NULL)
+	{
+		lv_timer_pause(_settingUI._dataFlow->flewTimer);
+		lv_timer_del(_settingUI._dataFlow->flewTimer);
+		rt_free(_settingUI._dataFlow);
 	}
+#endif
+	_settingUI.bIsUIon = 0;
+
 }
 
 

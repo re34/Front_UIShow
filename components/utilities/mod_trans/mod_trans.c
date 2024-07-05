@@ -162,15 +162,11 @@ static int uart_rts(int on)
 }
 
 
-int modbus_Initial(small_modbus_t *smb_master, bool enable485)
+int modbus_Initial(small_modbus_t *smb_master, const char *uart_name, bool enable485)
 {
 	
 	struct serial_configure serial_config;
-	//init modbus
-	if(enable485  == false)
-		modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(LD_UART_NAME)); 
-	else
-		modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(TA_UART_NAME)); 		
+	modbus_init(smb_master, MODBUS_CORE_RTU, modbus_port_rtdevice_create(uart_name));
 	serial_config.baud_rate = BAUD_RATE_19200;
 	serial_config.data_bits = DATA_BITS_8;
 	serial_config.stop_bits = STOP_BITS_1;
@@ -200,13 +196,13 @@ void trans_modbusInit(void)
 	/*****************************************
 	*1. 初始化2个串口
 	******************************************/	
-	ret = modbus_Initial(&_rtu_master[0], false);
+	ret = modbus_Initial(&_rtu_master[0], LD_UART_NAME, false);
 	if(ret != MODBUS_OK)
 	{
 		rt_kprintf("init modbus failed!\n");
 		return;
 	}
-	ret = modbus_Initial(&_rtu_master[1], true);
+	ret = modbus_Initial(&_rtu_master[1], TA_UART_NAME, false);
 	if(ret != MODBUS_OK)
 	{
 		rt_kprintf("init modbus failed!\n");

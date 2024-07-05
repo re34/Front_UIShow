@@ -39,7 +39,7 @@
 #define RT_USING_DEVICE
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 128
-#define RT_CONSOLE_DEVICE_NAME "uart1"
+#define RT_CONSOLE_DEVICE_NAME "uart2"
 #define RT_VER_NUM 0x40002
 #define ARCH_ARM
 #define RT_USING_CPU_FFS
@@ -109,7 +109,10 @@
 #define RT_SFUD_USING_FLASH_INFO_TABLE
 #define RT_SFUD_SPI_MAX_HZ 50000000
 #define RT_USING_TOUCH
+#define RT_USING_ENCODER_INPUTDEV
 #define RT_USING_TS_INPUTDEV
+#define RT_USING_KEYPAD_INPUTDEV
+#define RT_USING_PULSE_ENCODER
 
 /* Using USB */
 
@@ -286,6 +289,9 @@
 #define BSP_USING_SPI5
 #define BSP_USING_I2C
 #define BSP_USING_I2C1
+#define BSP_USING_I2C2
+#define BSP_USING_PULSE_ENCODER
+#define BSP_USING_PULSE_ENCODER2
 
 /* Board extended module Drivers */
 

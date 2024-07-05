@@ -315,6 +315,43 @@ void Gui_Style_Init(void)
 }
 
 
+void spinbox_overFlow_send(bool enable)
+{
+	flow_Sender_t* sender = NULL;
+
+	if(_taUI._taFlow)
+	{
+		sender = _taUI._taFlow;
+
+		sender->idleCnt = 0;
+		sender->bIsDataSend = false;
+		sender->bIsIncEnabled = enable;
+		if(sender->bIsTimerRun == false)
+		{
+			sender->bIsTimerRun = true;
+			//开启空闲超时检测
+			lv_timer_resume(sender->flewTimer);
+		}
+	}
+	else if(_settingUI._dataFlow)
+	{
+		sender = _settingUI._dataFlow;
+		sender->idleCnt = 0;
+		sender->bIsDataSend = false;
+		sender->bIsIncEnabled = enable;
+		if(sender->bIsTimerRun == false)
+		{
+			sender->bIsTimerRun = true;
+			//开启空闲超时检测
+			lv_timer_resume(sender->flewTimer);
+		}
+	}
+
+
+}
+
+
+
 void spinContent_style_init(uint8_t type, tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb)
 {
 	//初始化为空白对象(无边框)
