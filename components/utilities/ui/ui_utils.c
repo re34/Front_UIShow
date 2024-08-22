@@ -13,6 +13,9 @@ lv_style_t style_tabIcon;
 lv_style_t style_ManualBtn;
 lv_style_t style_tabContent;
 lv_style_t style_Window;
+lv_style_t style_FuncBtn;
+lv_style_t style_SubPage;
+
 
 struct _dialog_t ui_Dialog;
 
@@ -280,10 +283,16 @@ void Gui_Style_Init(void)
 	lv_style_set_text_font(&style_tabIcon, &font_symbol_20);
 	//手动类按钮风格
 	lv_style_init(&style_ManualBtn);
-	lv_style_set_obj_size(&style_ManualBtn, 75, 40);
+	lv_style_set_obj_size(&style_ManualBtn, 60, 30);
 	lv_style_set_border_width(&style_ManualBtn, 0);
 	lv_style_set_bg_color(&style_ManualBtn, lv_color_hex(0x3b67b0));
-	lv_style_set_radius(&style_ManualBtn, 20);
+	lv_style_set_radius(&style_ManualBtn, 12);
+
+	lv_style_init(&style_FuncBtn);
+	lv_style_set_obj_size(&style_FuncBtn, 60, 50);
+	lv_style_set_text_font(&style_FuncBtn, &font_symbol_32);
+	lv_style_set_radius(&style_FuncBtn, 20);
+	
 	//标签页内容布局
 	lv_style_init(&style_tabContent);
     lv_style_set_pad_hor(&style_tabContent, 8);     //设置左右离外边框的间距
@@ -312,14 +321,24 @@ void Gui_Style_Init(void)
 	lv_style_set_bg_color(&style_Info, lv_palette_main(LV_PALETTE_BLUE));
 	lv_style_set_bg_grad_color(&style_Info, lv_palette_main(LV_PALETTE_RED));
 	lv_style_set_bg_grad_dir(&style_Info, LV_GRAD_DIR_HOR);
+	//分页样式
+	lv_style_init(&style_SubPage);
+	lv_style_set_pad_hor(&style_SubPage, 20);
+	lv_style_set_pad_row(&style_SubPage, 10);
+	lv_style_set_flex_flow(&style_SubPage, LV_FLEX_FLOW_COLUMN);
+	//关键：若无此行代码 lv_style_set_flex_flow 不生效
+	lv_style_set_layout(&style_SubPage, LV_LAYOUT_FLEX);	
 }
 
 
-void spinContent_style_init(uint8_t type, tab_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb)
+void spinContent_style_init(ctrl_module_t* t_objBox, const char **label_list, lv_event_cb_t event_cb)
 {
 	//初始化为空白对象(无边框)
 	char initStr[7];
+
 	struct m_attr_t *p_attr = &t_objBox->_attr;
+	uint8_t decimal_part = p_attr->wholeCnt - p_attr->integerCnt;
+	
 	//整体样式
 	lv_obj_remove_style_all(t_objBox->_root);
 	lv_obj_set_size(t_objBox->_root, 220, 85);
@@ -331,29 +350,14 @@ void spinContent_style_init(uint8_t type, tab_module_t* t_objBox, const char **l
 	lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
 	//spinbox样式
     lv_spinbox_set_range(t_objBox->_mObj, p_attr->range_min, p_attr->range_max);
-	if(type == UI_Type_LD){
-		if(p_attr->bHasDot){
-			lv_spinbox_set_digit_format(t_objBox->_mObj, 6, 3);
-			lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)p_attr->_initVal) / 1000);
-		}else{
-			if(p_attr->range_max <= 999)
-				lv_spinbox_set_digit_format(t_objBox->_mObj, 3, 3);
-			else
-				lv_spinbox_set_digit_format(t_objBox->_mObj, 7, 7);
-			lv_snprintf(initStr, sizeof(initStr), "%d", p_attr->_initVal);
-		}
+	//设置显示数字点位
+	lv_spinbox_set_digit_format(t_objBox->_mObj, p_attr->wholeCnt, p_attr->integerCnt);
+	if(p_attr->bHasDot){
+		lv_snprintf(initStr, sizeof(initStr), "%%.%df", decimal_part, ((float)p_attr->_initVal) * p_attr->accuracy);
+	}else{
+		lv_snprintf(initStr, sizeof(initStr), "%d", p_attr->_initVal * p_attr->accuracy);
 	}
-	else{
-		if(p_attr->bHasDot)
-		{
-			lv_spinbox_set_digit_format(t_objBox->_mObj, 3, 2);
-			lv_snprintf(initStr, sizeof(initStr), "%.1f", ((float)p_attr->_initVal) / 10);
-
-		}else{
-			lv_spinbox_set_digit_format(t_objBox->_mObj, 4, 4);
-			lv_snprintf(initStr, sizeof(initStr), "%d", ((float)p_attr->_initVal) / 1000);
-		}
-	}
+	
 	lv_spinbox_set_cursor_pos(t_objBox->_mObj, 0);
 	lv_obj_set_size(t_objBox->_mObj, 130, 45);
 	lv_textarea_set_align(t_objBox->_mObj, LV_TEXT_ALIGN_CENTER);
@@ -372,9 +376,10 @@ void spinbox_flush_val(lv_obj_t *obj, uint32_t val)
 {
 	char initStr[7];
 	struct m_attr_t *p_attr = (struct m_attr_t *)obj->user_data;
-
-	if(p_attr->bHasDot){
-		lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)val) / 1000);
+	if(p_attr->bHasDot)
+	{
+		lv_snprintf(initStr, sizeof(initStr), "%%.%df", p_attr->wholeCnt - p_attr->integerCnt, ((float)val) * p_attr->accuracy);
+		//lv_snprintf(initStr, sizeof(initStr), "%.3f", ((float)val) / 1000);
 	}else{
 		lv_snprintf(initStr, sizeof(initStr), "%d", val);
 	}	
@@ -383,7 +388,7 @@ void spinbox_flush_val(lv_obj_t *obj, uint32_t val)
 }
 
 
-lv_obj_t *spinBtn_style_init(tab_module_t* t_objBox, lv_event_cb_t event_cb)
+lv_obj_t *spinBtn_style_init(ctrl_module_t* t_objBox, lv_event_cb_t event_cb)
 {
 	//左右按键设置
 	lv_obj_t * btn = lv_btn_create(t_objBox->_root);
@@ -409,7 +414,7 @@ static void btnOk_event_cb(lv_event_t* e)
 		{
 			//保存
 			case Dialog_Type_Save:
-				Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_SAVE));
+				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, 2, E_Modbus_Write, _settingUI.iSwitchs |(1 << BIT_SAVE));
 			break;
 			case Dialog_Type_TaSave:
 				Gui_SendMessge(uart_mq, MODBUS_TA_SAVE_ADDR, 2, E_Modbus_TA_Write, 0xFF);
@@ -428,22 +433,34 @@ static void btnOk_event_cb(lv_event_t* e)
 				lv_tabview_set_act(_settingUI._tabCont, 0, LV_ANIM_ON);
 			break;
 			//单一开关机
-			case Dialog_Type_Power:
-				//关机操作需要先解锁
-				if(_settingUI._mods_sp[Type_Power]->_attr._initVal == Power_Proc_On 
-					&& _settingUI._mods_sp[Type_Lock]->_attr._initVal >= Lock_Proc_On)
-					lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);				
+			case Dialog_Type_Power:			
 				lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
-
+				_settingUI.iSwitchs &= ~(1 << BIT_SCAN);
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);	
 			break;
-			//一键锁定(开机 + 锁定)
-			case Dialog_Type_LockOpenLaser: 
-				lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
-				lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+			//一键锁定(开机 + 发送工作点电流 + 锁定 // 解锁：只解锁)
+			case Dialog_Type_LockOpenLaser: 				
+				if(_settingUI._mods_sp[Type_Lock]->_attr._initVal != Lock_Proc_Off)
+					//若当前处于正在锁定或已锁定, 则立即执行解锁操作
+					lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+				else
+				//开启倒计时
+				{
+					lv_event_send(_settingUI._mods_sp[Type_Power]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+					_settingUI.timerCntDown = DEFAULT_TIME_CNT;
+					_settingUI.bIsEntryCountDwn = true;
+				}
 			break;
+			//单一锁定
 			default:
 			{
-				//单一锁定：加前提条件，执行锁定时，需先开电源
+				//如果一键锁定正在读秒
+				if(_settingUI.bIsEntryCountDwn == true)
+				{
+					_settingUI.bIsEntryCountDwn = false;
+					lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
+				}
+				//加前提条件，执行锁定时，需先开电源
 				if(_settingUI._mods_sp[Type_Power]->_attr._initVal == Power_Proc_On)
 					lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
 				else{

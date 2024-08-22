@@ -203,6 +203,8 @@ struct _small_modbus_port
     int (*write)(small_modbus_t *smb, uint8_t *data, uint16_t length);
     int (*flush)(small_modbus_t *smb);
     int (*wait)(small_modbus_t *smb, int timeout);
+	//add by lxy
+    int (*control)(small_modbus_t *smb, int cmd, void *argv);
 };
 
 
@@ -233,7 +235,7 @@ int modbus_set_debug(small_modbus_t *smb, int level);
 /* master start request */
 int modbus_start_request(small_modbus_t *smb, uint8_t *request, int function, int addr, int num, void *write_data);
 /* master wait for confirmation message */
-int modbus_wait_confirm(small_modbus_t *smb, uint8_t *response);
+int modbus_wait_confirm(small_modbus_t *smb, int read_want, uint8_t *response);
 /* master handle confirmation message */
 int modbus_handle_confirm(small_modbus_t *smb, uint8_t *request, uint16_t request_len, uint8_t *response, uint16_t response_len, void *read_data);
 /* master read */

@@ -11,8 +11,8 @@
 #include "drv_common.h"
 #include "board.h"
 
-#ifdef RT_USING_SERIAL
-#include "drv_usart.h"
+#ifdef RT_USING_SERIAL_X
+#include "drv_usartX.h"
 #endif
 
 #ifdef RT_USING_FINSH
@@ -146,7 +146,7 @@ RT_WEAK void rt_hw_board_init()
 #endif
 
     /* USART driver initialization is open by default */
-#ifdef RT_USING_SERIAL
+#ifdef RT_USING_SERIAL_X
     rt_hw_usart_init();
 #endif
 

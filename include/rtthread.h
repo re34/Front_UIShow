@@ -390,6 +390,8 @@ rt_err_t rt_mq_recv(rt_mq_t    mq,
                     rt_size_t  size,
                     rt_int32_t timeout);
 rt_err_t rt_mq_control(rt_mq_t mq, int cmd, void *arg);
+
+
 #endif
 
 /*
@@ -456,7 +458,7 @@ rt_size_t rt_device_write(rt_device_t dev,
                           const void *buffer,
                           rt_size_t   size);
 rt_err_t  rt_device_control(rt_device_t dev, int cmd, void *arg);
-
+rt_err_t  rt_device_flush(rt_device_t dev);
 /**@}*/
 #endif
 

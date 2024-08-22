@@ -41,6 +41,8 @@ struct stm32_uart_config
     const char *name;
     USART_TypeDef *Instance;
     IRQn_Type irq_type;
+	//add by lxy
+	rt_uint32_t data_mask;
     struct dma_config *dma_rx;
     struct dma_config *dma_tx;
 };

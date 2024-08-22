@@ -46,12 +46,17 @@ menu "On-chip Peripheral Drivers"
     menuconfig BSP_USING_UART
         bool "Enable UART"
         default y
-        select RT_USING_SERIAL
+        select RT_USING_SERIAL_X
         if BSP_USING_UART
             config BSP_USING_UART1
                 bool "Enable UART1"
                 default y
-
+				
+            config BSP_UART1_TX_USING_DMA
+                bool "Enable UART1 TX DMA"
+                depends on BSP_USING_UART1 && RT_SERIAL_USING_DMA
+                default n
+				
             config BSP_UART1_RX_USING_DMA
                 bool "Enable UART1 RX DMA"
                 depends on BSP_USING_UART1 && RT_SERIAL_USING_DMA
@@ -61,6 +66,11 @@ menu "On-chip Peripheral Drivers"
                 bool "Enable UART2"
                 default y
 				
+            config BSP_UART2_TX_USING_DMA
+                bool "Enable UART2 TX DMA"
+                depends on BSP_USING_UART2 && RT_SERIAL_USING_DMA
+                default n
+				
             config BSP_UART2_RX_USING_DMA
                 bool "Enable UART2 RX DMA"
                 depends on BSP_USING_UART2 && RT_SERIAL_USING_DMA
@@ -69,7 +79,12 @@ menu "On-chip Peripheral Drivers"
             config BSP_USING_UART3
                 bool "Enable UART3"
                 default n
-
+				
+            config BSP_UART3_TX_USING_DMA
+                bool "Enable UART3 TX DMA"
+                depends on BSP_USING_UART3 && RT_SERIAL_USING_DMA
+                default n
+				
             config BSP_UART3_RX_USING_DMA
                 bool "Enable UART3 RX DMA"
                 depends on BSP_USING_UART3 && RT_SERIAL_USING_DMA
@@ -79,15 +94,25 @@ menu "On-chip Peripheral Drivers"
                 bool "Enable UART4"
                 default n
 
+            config BSP_UART4_TX_USING_DMA
+                bool "Enable UART4 TX DMA"
+                depends on BSP_USING_UART4 && RT_SERIAL_USING_DMA
+                default n
+				
             config BSP_UART4_RX_USING_DMA
                 bool "Enable UART4 RX DMA"
-                depends on BSP_USING_UART41 && RT_SERIAL_USING_DMA
+                depends on BSP_USING_UART4 && RT_SERIAL_USING_DMA
                 default n
 
             config BSP_USING_UART6
                 bool "Enable UART6"
                 default n
-
+				
+            config BSP_UART6_TX_USING_DMA
+                bool "Enable UART6 TX DMA"
+                depends on BSP_USING_UART6 && RT_SERIAL_USING_DMA
+                default n
+				
             config BSP_UART6_RX_USING_DMA
                 bool "Enable UART6 RX DMA"
                 depends on BSP_USING_UART6 && RT_SERIAL_USING_DMA

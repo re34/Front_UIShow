@@ -13,15 +13,19 @@
 #define MODULE_HEIGHT       (TOP_HEIGHT - MTM_GAP * 2)
 
 
-
-const char* list2_icons[2] = {
-	MY_SYMBOL_FREQ,
+const char* list2_icons[MAIN_SAMPLE_NUMS] = {
+	MY_SYMBOL_I,
 	MY_SYMBOL_TEMPER,
+	MY_SYMBOL_TEMPER,
+	MY_SYMBOL_TEMPER,	
 };
 
-const char* list1_label[2] = {
-	"Current (mA)",
-	"Temperature (℃)",
+const char* list1_label[MAIN_SAMPLE_NUMS] = 
+{
+	"Current(mA)",
+	"Temper1(℃)",
+	"Temper2(℃)",	
+	"Temper3(℃)",	
 };
 
 struct _ui_info ui;
@@ -48,60 +52,26 @@ void lv_obj_set_opa_scale(lv_obj_t* obj, int16_t opa)
 void viewGrp_Update(viewInfo_t *info, uint8_t index)
 {
 	uint32_t tmp = 0;
-	if(index <= Item_Temper)
-		tmp = ui_sample[DATA_OFFSET + index].recvDate;
-	else
-		tmp = ui_sample[1].recvDate;
+	int32_t warnVal = 0;
+	tmp = ui_sample[DATA_OFFSET + index].recvDate;
 	if(tmp & 0xF0000000) //负数
 		return;
 	//更新进度条
 	lv_bar_set_value(info->Bar_Main, tmp / 1000, LV_ANIM_ON);
-	int32_t warnVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET]->_mObj);
-	if(tmp < warnVal || index > Item_Temper)
+	if(index == Item_Temper_Lv2)
+		warnVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET - 1]->_mObj);
+	else if(index == Item_Temper_Lv3)
+		warnVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET - 2]->_mObj);
+	else
+		warnVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET]->_mObj);		
+	//采样值正常或无告警采样项正常显示数值
+	if(tmp < warnVal)
 		lv_label_set_text_fmt(info->Bar_icon, "%.2f", ((float)tmp / 1000));
 	else
 		lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
 }
 
-void sample_update(uint8_t lockState)
-{
-	module_set_usage_value(ui.topInfo.I_module);
-	module_set_usage_value(ui.topInfo.T_module);
-	
-	lv_label_set_text_fmt(
-		ui.bottomInfo.labelInfoGrp[0].lableValue,
-		"%d",
-		ui.bottomInfo.labelInfoGrp[0].sample->recvDate
-	);
-	for(int i = 1; i <= 4; i++)
-	{		
-		uint32_t val = ui.bottomInfo.labelInfoGrp[i].sample->recvDate;
-		if(val & 0xF0000000)
-		{
-			val = ~val + 1;
-			lv_label_set_text_fmt(
-				ui.bottomInfo.labelInfoGrp[i].lableValue,
-				"-%.3f",
-				((float)val) / 1000
-			);			
-		}else{
-			lv_label_set_text_fmt(
-				ui.bottomInfo.labelInfoGrp[i].lableValue,
-				"%.3f",
-				((float)val) / 1000
-			);	
-		}
-	}	
-	lv_label_set_text(
-		ui.bottomInfo.labelInfoGrp[5].lableValue,
-		lockState?"Locked":"Unlock"
-	);
-	lv_obj_set_style_text_color(
-		ui.bottomInfo.labelInfoGrp[5].lableValue, 
-		lv_palette_main(lockState? LV_PALETTE_GREEN : LV_PALETTE_RED), 
-		0
-	);
-}
+
 
 
 void Info_TaskUpdate(lv_timer_t* timer)
@@ -114,39 +84,73 @@ void Info_TaskUpdate(lv_timer_t* timer)
 		{
 			spinbox_flush_val(_settingUI._mods[i]->_mObj, ui_cfgVal[1 + i].recvDate);
 		}
-		for(i = 0; i < (RELAY_NUMS - 1); i++)
+		if(ui.Stat.bIsNeedAllFlush == true)
 		{
-			sw_flush_val(_settingUI._mods_sw[i]->_mObj, i, ui_cfgVal[0].recvDate);
-		}
-		//刷新扫描开关
-		if(!(ui_cfgVal[0].recvDate & (1 << BIT_SCAN)))
-		{
-			lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);
-		}else{
-			lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0x3b67b0), LV_PART_MAIN);
+			for(i = 0; i < RELAY_NUMS; i++)
+			{
+				sw_flush_val(_settingUI._mods_sw[i]->_mObj, i, ui_cfgVal[0].recvDate);
+			}
+			//刷新扫描开关
+			if(!(ui_cfgVal[0].recvDate & (1 << BIT_SCAN)))
+			{
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0xd74047), LV_PART_MAIN);
+			}else{
+				lv_obj_set_style_bg_color(_settingUI._ScanObj, lv_color_hex(0x3b67b0), LV_PART_MAIN);
+			}
+			_settingUI.iSwitchs = ui_cfgVal[0].recvDate;
+			if(_settingUI.bIsFirstPwrOn)
+			{
+				_settingUI.bIsFirstPwrOn = false;			
+				for(i = 0; i < 2; i++)
+				{
+					switchLock_valInit(_settingUI._mods_sp[i]);
+				}
+			}
 		}		
-		_settingUI.iSwitchs = ui_cfgVal[0].recvDate;
 		return;
+	}
+	//标签页显示倒计时，倒计时的结束后发送自动锁命令
+	if(_settingUI.bIsEntryCountDwn)
+	{
+		if(_settingUI.bIsFirstCd)
+		{
+			char timeStr[8];
+			
+			lv_snprintf(timeStr, sizeof(timeStr), "%d秒", _settingUI.timerCntDown--);
+			lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, timeStr);		
+			if(_settingUI.timerCntDown < 0){
+				_settingUI.bIsEntryCountDwn = false;				
+				_settingUI.bIsFirstCd = false;
+				lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+				lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
+			}
+		}else{
+			_settingUI.bIsEntryCountDwn = false;
+			lv_event_send(_settingUI._mods_sp[Type_Lock]->_mObj, LV_EVENT_VALUE_CHANGED, NULL);
+			lv_label_set_text(_settingUI._mods_sp[Type_Lock]->_titleLabel, "一键锁定");
+		}			
 	}
 	lv_obj_t *tv_obj = lv_obj_get_parent((lv_obj_t *)timer->user_data);
 	uint8_t index = lv_obj_get_index(lv_tileview_get_tile_act(tv_obj));
-	uint8_t lockState = (uint8_t)ui.bottomInfo.labelInfoGrp[5].sample->recvDate;
+	uint8_t lockState  = ui_sample[LOCK_STATE_ADDR].recvDate;
 	if(index == 0)//如果处于采样界面
 	{
-		sample_update(lockState);
+		module_set_usage_value(ui.topInfo.I_module);
+		for(int i = 0; i < MAX_TEMP_NUMS; i++)
+			module_set_usage_value(ui.topInfo.T_module[i]);
 	}else{
 		for (int i = 0; i < ARRAY_SIZE(_settingUI.labelGrp); i++)
 		{
 			viewGrp_Update(&(_settingUI.labelGrp[i]), i);
 		}
 	}
-	//前提是开启自动锁
+	//检测到开启自动锁
 	if(_settingUI.iSwitchs & (1 << BIT_AUTO_LOCK))
 	{
 		//未锁定则一直查看锁定状态，若锁定则更新状态
 		if(!lockState)
 		{
-			ui.bottomInfo.bFirstEntryLock = false;
+			ui.Stat.bFirstEntryLock = false;
 			if(_settingUI._mods_sp[Type_Lock]->_attr._initVal == Lock_Proc_On)
 			{
 				_settingUI._mods_sp[Type_Lock]->_attr._initVal = Lock_Proc_handling;
@@ -154,90 +158,34 @@ void Info_TaskUpdate(lv_timer_t* timer)
 				lv_anim_start(&_settingUI._mods_sp[Type_Lock]->anim);
 			}		
 		}else{
-			if(false == ui.bottomInfo.bFirstEntryLock)
+			if(false == ui.Stat.bFirstEntryLock)
 			{	
 				//进入锁定状态，更新所有配置数据
-				ui.bottomInfo.bFirstEntryLock = true;
-				Gui_SendMessge(uart_mq, MODBUS_LD_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);
+				ui.Stat.bFirstEntryLock = true;
+				ui.Stat.bIsNeedAllFlush = true;
+				Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);
 			    _settingUI._mods_sp[Type_Lock]->_attr._initVal = Lock_Proc_On;
 				lv_anim_start(&_settingUI._mods_sp[Type_Lock]->anim);
 				return;
 			}
+		}		
+	}
+	//检测到关闭自动锁
+	else{
+		if(true == ui.Stat.bFirstEntryLock)
+		{
+			ui.Stat.bFirstEntryLock = false;
+			//关闭自动锁（解除锁定）操作不需要更新开关类数据
+			ui.Stat.bIsNeedAllFlush = false;
+			Gui_SendMessge(uart_mq, MODBUS_DFB_CFG_ADDR, MAX_CONFIG_NUM * 2, E_Modbus_Read, 0);			
 		}
 	}
 	Gui_SendMessge(uart_mq, 0, MAX_SAMPLE_NUM * 2, E_Modbus_Read, 0);
 }
 
 
-void SubInfoGrp_Create(lv_obj_t* parent, SubInfo_t* info, const char* unitText)
-{
-    lv_obj_t* cont = lv_obj_create(parent);
-    lv_obj_remove_style_all(cont);
-    lv_obj_set_size(cont, 150, 39);
+/**********************************2. 主显示区*******************************************/
 
-    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(
-        cont,
-        LV_FLEX_ALIGN_SPACE_AROUND,
-        LV_FLEX_ALIGN_CENTER,
-        LV_FLEX_ALIGN_CENTER
-    );
-
-    lv_obj_t* label = lv_label_create(cont);
-    lv_obj_set_style_text_font(label, &font_bahnschrift_17, 0);
-    lv_obj_set_style_text_color(label, lv_color_white(), 0);
-    info->lableValue = label;
-
-    label = lv_label_create(cont);
-    lv_obj_set_style_text_font(label, &font_bahnschrift_13, 0);
-    lv_obj_set_style_text_color(label, lv_color_hex(0xb3b3b3), 0);
-    lv_label_set_text(label, unitText);
-    info->lableUnit = label;
-    info->cont = cont;
-}
-
-
-
-void BottomInfo_Create(lv_obj_t* parent)
-{
-	lv_obj_t* cont = lv_obj_create(parent);
-	lv_obj_remove_style_all(cont);
-    lv_obj_set_size(cont, LV_HOR_RES, 90);
-	lv_obj_align_to(cont, ui.topInfo.cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
-
-	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
-	lv_obj_set_flex_align(
-		cont,
-		LV_FLEX_ALIGN_SPACE_EVENLY,
-		LV_FLEX_ALIGN_CENTER,
-		LV_FLEX_ALIGN_CENTER
-	);
-	ui.bottomInfo.cont = cont;
-	const char* unitText[6] =
-	{
-		"Addr",						//地址
-		"Integral",					//积分
-		"Fast/slow",				//快/慢反
-		"SA Signal",				//荧光
-		"Error Signal",				//误差信号
-		"Lock State",				//锁定状态
-	};
-	for (int i = 0; i < ARRAY_SIZE(ui.bottomInfo.labelInfoGrp); i++)
-	{
-		SubInfoGrp_Create(
-			cont,
-			&(ui.bottomInfo.labelInfoGrp[i]),
-			unitText[i]
-		);
-		ui.bottomInfo.labelInfoGrp[i].sample = &ui_sample[i];		
-	}
-	if(ui_sample[LOCK_STATE_ADDR].recvDate == 0)
-		ui.bottomInfo.bFirstEntryLock = false;
-	else
-		ui.bottomInfo.bFirstEntryLock = true;
-}
-
-/*********************************************************************************/
 static void chart_draw_event_cb(lv_event_t* event)
 {
     lv_obj_t* obj = lv_event_get_target(event);
@@ -284,13 +232,14 @@ static void chart_draw_event_cb(lv_event_t* event)
 
 
 
-static void module_style_init(module_t* module, uint8_t icon_index)
+
+static void module_style_init(module_t* module, uint8_t icon_index, lv_coord_t w, lv_coord_t h)
 {
     lv_obj_remove_style_all(module->obj_root);
     lv_obj_set_style_radius(module->obj_root, 6, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(module->obj_root, LV_OPA_50, LV_PART_MAIN);
     lv_obj_set_style_bg_color(module->obj_root, lv_color_hex(0x393d45), LV_PART_MAIN);
-    lv_obj_set_size(module->obj_root, MODULE_WIDTH, MODULE_HEIGHT);
+    lv_obj_set_size(module->obj_root, w, h);
     lv_obj_clear_flag(module->obj_root, LV_OBJ_FLAG_SCROLLABLE);
 
     /*Icon*/
@@ -298,20 +247,22 @@ static void module_style_init(module_t* module, uint8_t icon_index)
 	lv_obj_set_style_text_color(module->iconlabel, lv_color_hex(0xff931e), LV_PART_MAIN);
 	lv_obj_set_style_text_font(module->iconlabel, &font_symbol_32, LV_PART_MAIN);
 	lv_label_set_text(module->iconlabel, list2_icons[icon_index]);
-	lv_obj_align(module->iconlabel, LV_ALIGN_TOP_LEFT, 15, 10);
-
+	
+    /*标签名*/
 	lv_obj_t *icon_label = lv_label_create(module->obj_root);
 	lv_obj_remove_style_all(icon_label);
 	lv_obj_set_style_text_color(icon_label, lv_color_hex(0xff931e), LV_PART_MAIN);
 	lv_obj_set_style_text_font(icon_label, &font_tw_15, LV_PART_MAIN);
 	lv_label_set_text(icon_label, list1_label[icon_index]);
+	lv_obj_align(module->iconlabel, LV_ALIGN_TOP_LEFT, 15, 10);
 	lv_obj_align_to(icon_label, module->iconlabel, LV_ALIGN_OUT_RIGHT_MID, 30, -8);
-   
-    /*Utilize Label*/
+
+
+    /*数值*/
     lv_obj_remove_style_all(module->usage_label);
     lv_obj_set_style_text_color(module->usage_label, lv_color_white(), LV_PART_MAIN);
     lv_obj_set_style_text_font(module->usage_label, &font_bahnschrift_35, LV_PART_MAIN);
-    lv_obj_align(module->usage_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(module->usage_label, LV_ALIGN_CENTER, 0, 6);
 
     /*Utilize Chart*/
     lv_obj_move_background(module->usage_chart);
@@ -321,7 +272,7 @@ static void module_style_init(module_t* module, uint8_t icon_index)
     lv_obj_set_style_pad_all(module->usage_chart, 0, LV_PART_MAIN);
     lv_obj_set_style_size(module->usage_chart, 0, LV_PART_INDICATOR);     //在折线上不显示点
     lv_obj_set_style_opa(module->usage_chart, LV_OPA_80, LV_PART_ITEMS);
-    lv_obj_set_size(module->usage_chart, MODULE_WIDTH, LV_PCT(80));
+    lv_obj_set_size(module->usage_chart, w, LV_PCT(80));
     lv_obj_align(module->usage_chart, LV_ALIGN_BOTTOM_LEFT, 0, -5);
     lv_chart_set_type(module->usage_chart, LV_CHART_TYPE_LINE);
     lv_chart_set_range(module->usage_chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100);
@@ -332,7 +283,8 @@ static void module_style_init(module_t* module, uint8_t icon_index)
 }
 
 
-static module_t* module_create(lv_obj_t* parent, uint8_t icon_index)
+
+static module_t* module_create(lv_obj_t* parent, uint8_t icon_index, lv_coord_t w, lv_coord_t h)
 {
     module_t* _module = (module_t*)rt_malloc(sizeof(module_t));
     if (_module != NULL)
@@ -342,7 +294,7 @@ static module_t* module_create(lv_obj_t* parent, uint8_t icon_index)
         _module->usage_label = lv_label_create(_module->obj_root);
         _module->usage_chart = lv_chart_create(_module->obj_root);
         _module->usage_series = lv_chart_add_series(_module->usage_chart, lv_color_hex(0x6a98fa)/*线条颜色*/, LV_CHART_AXIS_PRIMARY_Y);
-		module_style_init(_module, icon_index);
+		module_style_init(_module, icon_index, w, h);
 		//采样值初始化
 		_module->mod_sample = &ui_sample[DATA_OFFSET + icon_index];
     }
@@ -352,18 +304,20 @@ static module_t* module_create(lv_obj_t* parent, uint8_t icon_index)
 static void module_free(void)
 {
 	rt_free(ui.topInfo.I_module);
-	rt_free(ui.topInfo.T_module);	
+	for(uint8_t i = 0; i < MAX_TEMP_NUMS; i++)
+		rt_free(ui.topInfo.T_module[i]);	
 }
 
 
-void TopInfo_Create(lv_obj_t* parent)
+void disp_TopInfo_Create(lv_obj_t* parent)
 {
     lv_obj_t* cont = lv_obj_create(parent);
 
     lv_obj_remove_style_all(cont);
-    lv_obj_set_size(cont, TOP_WITH, TOP_HEIGHT);
+    lv_obj_set_size(cont, TOP_WITH, TOP_HEIGHT * 2 - MTM_GAP);//2行控件
 	lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, 0);
 	lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
+	lv_obj_set_style_pad_row(cont, MTM_GAP, LV_PART_MAIN); 	
     lv_obj_set_flex_align(
         cont,
         LV_FLEX_ALIGN_SPACE_EVENLY,
@@ -371,8 +325,19 @@ void TopInfo_Create(lv_obj_t* parent)
         LV_FLEX_ALIGN_CENTER
     );
 	ui.topInfo.cont = cont;
-    ui.topInfo.I_module = module_create(cont, 0);
-    ui.topInfo.T_module = module_create(cont, 1);
+    ui.topInfo.I_module = module_create(cont, 0, MODULE_WIDTH, MODULE_HEIGHT);	
+	for(uint8_t i = 0; i < MAX_TEMP_NUMS; i++)
+    	ui.topInfo.T_module[i] = module_create(cont, i + 1, MODULE_WIDTH, MODULE_HEIGHT);
+	//更新锁定状态
+	if(ui_sample[LOCK_STATE_ADDR].recvDate == 0)
+		ui.Stat.bFirstEntryLock = false;
+	else
+		ui.Stat.bFirstEntryLock = true;
+	//首次进入刷新采样及配置数据，采样界面避免乱码	
+	ui.Stat.bIsNeedAllFlush = true;	
+	module_set_usage_value(ui.topInfo.I_module);
+	for(int i = 0; i < MAX_TEMP_NUMS; i++)
+		module_set_usage_value(ui.topInfo.T_module[i]);		
 }
 
 
@@ -448,6 +413,7 @@ static void btnHome_event_cb(lv_event_t* event)
 		lv_group_set_editing(lv_group_get_default(), false);
 		lv_group_remove_all_objs(lv_group_get_default());
 		ui_cfgVal[0].recvDate = _settingUI.iSwitchs;
+		_settingUI.bIsEntryCountDwn = false; //退出界面取消读秒
 		anim_reback = 0;
 		Gui_PageCallback((void *)&id, 1);	
 	}
@@ -468,12 +434,12 @@ static void btnSave_event_cb(lv_event_t* event)
 
 
 
-void BtnCont_Create(lv_obj_t* par)
+void disp_BottmCont_Create(lv_obj_t* par)
 {
     lv_obj_t* cont = lv_obj_create(par);
     lv_obj_remove_style_all(cont);
     lv_obj_set_size(cont, LV_HOR_RES, 40);
-    lv_obj_align_to(cont, ui.bottomInfo.cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 8);
+    lv_obj_align_to(cont, ui.topInfo.cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
     ui.btnCont.cont = cont;
     ui.btnCont.btnSave = Btn_Create(cont, MY_ICON_SAVE, -80);
     lv_obj_add_event_cb(ui.btnCont.btnSave, btnSave_event_cb, LV_EVENT_CLICKED, NULL);
@@ -481,7 +447,6 @@ void BtnCont_Create(lv_obj_t* par)
 	lv_obj_add_event_cb(ui.btnCont.btnHome, btnHome_event_cb, LV_EVENT_CLICKED, NULL);
     ui.btnCont.btnSetting = Btn_Create(cont, MY_ICON_ENRTY_SETTING, 80);
 	lv_obj_add_event_cb(ui.btnCont.btnSetting, btnSetting_event_cb, LV_EVENT_CLICKED, NULL);
-	sample_update(ui_sample[LOCK_STATE_ADDR].recvDate);
 	//modbus每1秒采集一次
 	ui.collect_timer = lv_timer_create(Info_TaskUpdate, 1000, (void *)par);
 	lv_timer_resume(ui.collect_timer);	
@@ -490,15 +455,16 @@ void BtnCont_Create(lv_obj_t* par)
 
 void sample_tile_init(lv_obj_t* root)
 {
+
     lv_obj_set_size(root, LV_HOR_RES, LV_VER_RES);
 	lv_obj_set_style_bg_opa(root, LV_OPA_COVER, 0);
 	lv_obj_set_style_bg_color(root, lv_color_black(), 0);
     lv_obj_clear_flag(root, LV_OBJ_FLAG_SCROLLABLE);
-
-	TopInfo_Create(root);
-	BottomInfo_Create(root);
-	BtnCont_Create(root);
-	Gui_dialog_Create();
+	//主显示区
+	disp_TopInfo_Create(root);
+	//功能按键区
+	disp_BottmCont_Create(root);
+	Gui_dialog_Create();	
 }
 
 

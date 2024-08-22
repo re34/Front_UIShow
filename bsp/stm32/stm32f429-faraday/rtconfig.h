@@ -39,7 +39,7 @@
 #define RT_USING_DEVICE
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 128
-#define RT_CONSOLE_DEVICE_NAME "uart1"
+#define RT_CONSOLE_DEVICE_NAME "uart2"
 #define RT_VER_NUM 0x40002
 #define ARCH_ARM
 #define RT_USING_CPU_FFS
@@ -98,8 +98,10 @@
 #define RT_USING_DEVICE_IPC
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SERIAL
+#define RT_USING_SERIAL_X
 #define RT_SERIAL_USING_DMA
-#define RT_SERIAL_RB_BUFSZ 256
+#define RT_SERIAL_FIFO_BUFSZ 256
+#define RT_SERIAL_DMA_BUFSZ 128
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_PIN
@@ -109,7 +111,10 @@
 #define RT_SFUD_USING_FLASH_INFO_TABLE
 #define RT_SFUD_SPI_MAX_HZ 50000000
 #define RT_USING_TOUCH
+#define RT_USING_ENCODER_INPUTDEV
 #define RT_USING_TS_INPUTDEV
+#define RT_USING_KEYPAD_INPUTDEV
+#define RT_USING_PULSE_ENCODER
 
 /* Using USB */
 
@@ -125,7 +130,7 @@
 /* POSIX layer and C standard library */
 
 #define RT_USING_LIBC
-#define RT_USING_POSIX
+//#define RT_USING_POSIX
 
 /* Network */
 
@@ -147,6 +152,19 @@
 /* Utilities */
 
 #define RT_USING_RYM
+#define RT_USING_ULOG
+#define ULOG_OUTPUT_LVL_D
+#define ULOG_OUTPUT_LVL 7
+#define ULOG_ASSERT_ENABLE
+#define ULOG_LINE_BUF_SIZE 128
+
+/* log format */
+
+#define ULOG_USING_COLOR
+#define ULOG_OUTPUT_TIME
+#define ULOG_OUTPUT_LEVEL
+#define ULOG_OUTPUT_TAG
+#define ULOG_BACKEND_USING_CONSOLE
 #define RT_USING_UTILS_LIST
 #define RT_USING_INPUT_DEV
 #define RT_USING_USER_UI
@@ -276,16 +294,24 @@
 #define BSP_USING_GPIO
 #define BSP_USING_FMC
 #define BSP_USING_UART
-#define BSP_USING_UART1
 #define BSP_USING_UART2
 #define BSP_USING_UART3
+#define BSP_UART3_RX_USING_DMA
+#define BSP_UART3_TX_USING_DMA
+
 #define BSP_USING_UART6
+#define BSP_UART6_RX_USING_DMA
+#define BSP_UART6_TX_USING_DMA
+
 #define BSP_USING_ON_CHIP_FLASH
 #define BSP_USING_USBD
 #define BSP_USING_SPI
 #define BSP_USING_SPI5
 #define BSP_USING_I2C
 #define BSP_USING_I2C1
+#define BSP_USING_I2C2
+#define BSP_USING_PULSE_ENCODER
+#define BSP_USING_PULSE_ENCODER2
 
 /* Board extended module Drivers */
 

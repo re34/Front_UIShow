@@ -5,6 +5,7 @@
  */
 
 #include "small_modbus_port_rtthread.h"
+#include "ulog.h"
 /*
  * modbus on rtthread
  */
@@ -33,9 +34,10 @@ int _modbus_debug(small_modbus_t *smb, int level, const char *fmt, ...)
  */
 int modbus_init(small_modbus_t *smb, uint8_t core_type, void *port)
 {
-    small_modbus_port_t *smb_port = port;
+    small_modbus_port_t *smb_port = (small_modbus_port_t *)port;
     if (smb && core_type && smb_port)
     {
+    	//设置modbus默认参数
         _modbus_init(smb);
         if (core_type == MODBUS_CORE_RTU) // check core type
         {
@@ -79,12 +81,15 @@ small_modbus_t *modbus_create(uint8_t core_type, void *port)
 #include <rtthread.h>
 #include <rtdevice.h>
 
+#if 0
 static rt_err_t _modbus_rtdevice_rx_indicate(rt_device_t dev, rt_size_t size)
 {
     small_modbus_port_rtdevice_t *smb_port_device = dev->user_data;
     smb_port_device->rx_size = size;
     return rt_sem_release(&(smb_port_device->rx_sem));
 }
+#endif
+
 
 static int _modbus_rtdevice_open(small_modbus_t *smb)
 {
@@ -92,7 +97,7 @@ static int _modbus_rtdevice_open(small_modbus_t *smb)
     if (smb_port_device->device)
     {
         smb_port_device->device->user_data = smb_port_device;
-        rt_device_set_rx_indicate(smb_port_device->device, _modbus_rtdevice_rx_indicate);
+        //rt_device_set_rx_indicate(smb_port_device->device, _modbus_rtdevice_rx_indicate);
         rt_device_open(smb_port_device->device, smb_port_device->oflag);
         if (smb_port_device->rts_set)
         {
@@ -154,14 +159,24 @@ static int _modbus_rtdevice_wait(small_modbus_t *smb, int timeout)
     rc = rt_sem_take(&(smb_port_device->rx_sem), timeout);
     if (rc < RT_EOK)
     {
+	    LOG_D("MODBUS_TIMEOUT");
         return MODBUS_TIMEOUT;
     }
     if (smb_port_device->rx_size == 0)
     {
+	    LOG_D("MODBUS_ERROR_READ");
         return MODBUS_ERROR_READ;
     }
     return rc;
 }
+
+
+static int _modbus_rtdevice_control(small_modbus_t *smb, int cmd, void *argv)
+{
+    small_modbus_port_rtdevice_t *smb_port_device = (small_modbus_port_rtdevice_t *)smb->port;
+	return rt_device_control(smb_port_device->device, cmd, argv);
+}
+
 
 small_modbus_port_rtdevice_t *modbus_port_rtdevice_get(small_modbus_t *smb)
 {
@@ -182,6 +197,8 @@ int modbus_port_rtdevice_init(small_modbus_port_rtdevice_t *port, const char *de
     port->base.write = _modbus_rtdevice_write;
     port->base.flush = _modbus_rtdevice_flush;
     port->base.wait = _modbus_rtdevice_wait;
+	//add by lxy
+    port->base.control = _modbus_rtdevice_control;
 
     port->device_name = device_name;
     port->device = rt_device_find(device_name);

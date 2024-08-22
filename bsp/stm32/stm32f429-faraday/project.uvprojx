@@ -339,7 +339,7 @@
               <MiscControls>--locale=english</MiscControls>
               <Define>USE_HAL_DRIVER, RT_USING_ARM_LIBC, STM32F429xx</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\..\include;applications;.;board;board\CubeMX_Config\Inc;board\ports;board\ports\spi_flash;board\ports\fal_config;board\ports\sdram;board\ports\lcd;board\ports\i2c;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;..\libraries\HAL_Drivers\drv_flash;packages\fal-latest\inc;packages\gt9147-v1.1.0\inc;packages\gt9147-v1.2.0\inc;packages\LVGL-v8.3-latest\env_support\rt-thread;packages\LVGL-v8.3-latest\src;packages\LVGL-v8.3-latest\src\core;packages\LVGL-v8.3-latest\src\draw;packages\LVGL-v8.3-latest\src\extra;packages\LVGL-v8.3-latest\src\font;packages\LVGL-v8.3-latest\src\hal;packages\LVGL-v8.3-latest\src\misc;packages\LVGL-v8.3-latest\src\widgets;packages\LVGL-v8.3-latest\src\draw\arm2d;packages\LVGL-v8.3-latest\src\draw\nxp;packages\LVGL-v8.3-latest\src\draw\sdl;packages\LVGL-v8.3-latest\src\draw\stm32_dma2d;packages\LVGL-v8.3-latest\src\draw\sw;packages\LVGL-v8.3-latest\src\draw\swm341_dma2d;packages\LVGL-v8.3-latest\src\draw\nxp\pxp;packages\LVGL-v8.3-latest\src\draw\nxp\vglite;packages\LVGL-v8.3-latest\src\extra\layouts;packages\LVGL-v8.3-latest\src\extra\libs;packages\LVGL-v8.3-latest\src\extra\others;packages\LVGL-v8.3-latest\src\extra\themes;packages\LVGL-v8.3-latest\src\extra\widgets;packages\LVGL-v8.3-latest\src\extra\layouts\flex;packages\LVGL-v8.3-latest\src\extra\layouts\grid;packages\LVGL-v8.3-latest\src\extra\libs\bmp;packages\LVGL-v8.3-latest\src\extra\libs\ffmpeg;packages\LVGL-v8.3-latest\src\extra\libs\freetype;packages\LVGL-v8.3-latest\src\extra\libs\fsdrv;packages\LVGL-v8.3-latest\src\extra\libs\gif;packages\LVGL-v8.3-latest\src\extra\libs\png;packages\LVGL-v8.3-latest\src\extra\libs\qrcode;packages\LVGL-v8.3-latest\src\extra\libs\rlottie;packages\LVGL-v8.3-latest\src\extra\libs\sjpg;packages\LVGL-v8.3-latest\src\extra\others\fragment;packages\LVGL-v8.3-latest\src\extra\others\gridnav;packages\LVGL-v8.3-latest\src\extra\others\ime;packages\LVGL-v8.3-latest\src\extra\others\imgfont;packages\LVGL-v8.3-latest\src\extra\others\monkey;packages\LVGL-v8.3-latest\src\extra\others\msg;packages\LVGL-v8.3-latest\src\extra\others\snapshot;packages\LVGL-v8.3-latest\src\extra\themes\basic;packages\LVGL-v8.3-latest\src\extra\themes\default;packages\LVGL-v8.3-latest\src\extra\themes\mono;packages\LVGL-v8.3-latest\src\extra\widgets\animimg;packages\LVGL-v8.3-latest\src\extra\widgets\calendar;packages\LVGL-v8.3-latest\src\extra\widgets\chart;packages\LVGL-v8.3-latest\src\extra\widgets\colorwheel;packages\LVGL-v8.3-latest\src\extra\widgets\imgbtn;packages\LVGL-v8.3-latest\src\extra\widgets\keyboard;packages\LVGL-v8.3-latest\src\extra\widgets\led;packages\LVGL-v8.3-latest\src\extra\widgets\list;packages\LVGL-v8.3-latest\src\extra\widgets\menu;packages\LVGL-v8.3-latest\src\extra\widgets\meter;packages\LVGL-v8.3-latest\src\extra\widgets\msgbox;packages\LVGL-v8.3-latest\src\extra\widgets\span;packages\LVGL-v8.3-latest\src\extra\widgets\spinbox;packages\LVGL-v8.3-latest\src\extra\widgets\spinner;packages\LVGL-v8.3-latest\src\extra\widgets\tabview;packages\LVGL-v8.3-latest\src\extra\widgets\tileview;packages\LVGL-v8.3-latest\src\extra\widgets\win;packages\LVGL-v8.3-latest\demos;packages\minIni-v1.2.0\dev;packages\ota_downloader-latest;packages\pcf8574-latest;packages\small_modbus-latest;packages\small_modbus-latest\inc;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m4;..\..\..\components\dfs\include;..\..\..\components\dfs\filesystems\devfs;..\..\..\components\dfs\filesystems\elmfat;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\spi;..\..\..\components\drivers\include;..\..\..\components\drivers\spi\sfud\inc;..\..\..\components\drivers\include;..\..\..\components\drivers\touch;..\..\..\components\drivers\include;..\..\..\components\drivers\usb\usbdevice;..\..\..\components\finsh;..\..\..\components\libc\compilers\armlibc;..\..\..\components\libc\compilers\common;..\..\..\components\utilities\mod_input;..\..\..\components\utilities\mod_trans;..\..\..\components\utilities\ui;..\..\..\components\utilities\utils_list;..\..\..\components\utilities\ymodem;..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Inc;..\libraries\STM32F4xx_HAL\CMSIS\Device\ST\STM32F4xx\Include;..\libraries\STM32F4xx_HAL\CMSIS\Include</IncludePath>
+              <IncludePath>.;..\..\..\include;applications;.;board;board\CubeMX_Config\Inc;board\ports;board\ports\spi_flash;board\ports\fal_config;board\ports\sdram;board\ports\lcd;board\ports\i2c;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;..\libraries\HAL_Drivers\drv_flash;packages\fal-latest\inc;packages\gt9147-v1.1.0\inc;packages\LVGL-v8.3-latest\env_support\rt-thread;packages\LVGL-v8.3-latest\src;packages\LVGL-v8.3-latest\src\core;packages\LVGL-v8.3-latest\src\draw;packages\LVGL-v8.3-latest\src\extra;packages\LVGL-v8.3-latest\src\font;packages\LVGL-v8.3-latest\src\hal;packages\LVGL-v8.3-latest\src\misc;packages\LVGL-v8.3-latest\src\widgets;packages\LVGL-v8.3-latest\src\draw\arm2d;packages\LVGL-v8.3-latest\src\draw\nxp;packages\LVGL-v8.3-latest\src\draw\sdl;packages\LVGL-v8.3-latest\src\draw\stm32_dma2d;packages\LVGL-v8.3-latest\src\draw\sw;packages\LVGL-v8.3-latest\src\draw\swm341_dma2d;packages\LVGL-v8.3-latest\src\draw\nxp\pxp;packages\LVGL-v8.3-latest\src\draw\nxp\vglite;packages\LVGL-v8.3-latest\src\extra\layouts;packages\LVGL-v8.3-latest\src\extra\libs;packages\LVGL-v8.3-latest\src\extra\others;packages\LVGL-v8.3-latest\src\extra\themes;packages\LVGL-v8.3-latest\src\extra\widgets;packages\LVGL-v8.3-latest\src\extra\layouts\flex;packages\LVGL-v8.3-latest\src\extra\layouts\grid;packages\LVGL-v8.3-latest\src\extra\libs\bmp;packages\LVGL-v8.3-latest\src\extra\libs\ffmpeg;packages\LVGL-v8.3-latest\src\extra\libs\freetype;packages\LVGL-v8.3-latest\src\extra\libs\fsdrv;packages\LVGL-v8.3-latest\src\extra\libs\gif;packages\LVGL-v8.3-latest\src\extra\libs\png;packages\LVGL-v8.3-latest\src\extra\libs\qrcode;packages\LVGL-v8.3-latest\src\extra\libs\rlottie;packages\LVGL-v8.3-latest\src\extra\libs\sjpg;packages\LVGL-v8.3-latest\src\extra\others\fragment;packages\LVGL-v8.3-latest\src\extra\others\gridnav;packages\LVGL-v8.3-latest\src\extra\others\ime;packages\LVGL-v8.3-latest\src\extra\others\imgfont;packages\LVGL-v8.3-latest\src\extra\others\monkey;packages\LVGL-v8.3-latest\src\extra\others\msg;packages\LVGL-v8.3-latest\src\extra\others\snapshot;packages\LVGL-v8.3-latest\src\extra\themes\basic;packages\LVGL-v8.3-latest\src\extra\themes\default;packages\LVGL-v8.3-latest\src\extra\themes\mono;packages\LVGL-v8.3-latest\src\extra\widgets\animimg;packages\LVGL-v8.3-latest\src\extra\widgets\calendar;packages\LVGL-v8.3-latest\src\extra\widgets\chart;packages\LVGL-v8.3-latest\src\extra\widgets\colorwheel;packages\LVGL-v8.3-latest\src\extra\widgets\imgbtn;packages\LVGL-v8.3-latest\src\extra\widgets\keyboard;packages\LVGL-v8.3-latest\src\extra\widgets\led;packages\LVGL-v8.3-latest\src\extra\widgets\list;packages\LVGL-v8.3-latest\src\extra\widgets\menu;packages\LVGL-v8.3-latest\src\extra\widgets\meter;packages\LVGL-v8.3-latest\src\extra\widgets\msgbox;packages\LVGL-v8.3-latest\src\extra\widgets\span;packages\LVGL-v8.3-latest\src\extra\widgets\spinbox;packages\LVGL-v8.3-latest\src\extra\widgets\spinner;packages\LVGL-v8.3-latest\src\extra\widgets\tabview;packages\LVGL-v8.3-latest\src\extra\widgets\tileview;packages\LVGL-v8.3-latest\src\extra\widgets\win;packages\LVGL-v8.3-latest\demos;packages\minIni-v1.2.0\dev;packages\ota_downloader-latest;packages\pcf8574-latest;packages\small_modbus-latest;packages\small_modbus-latest\inc;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m4;..\..\..\components\dfs\include;..\..\..\components\dfs\filesystems\devfs;..\..\..\components\dfs\filesystems\elmfat;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\spi;..\..\..\components\drivers\include;..\..\..\components\drivers\spi\sfud\inc;..\..\..\components\drivers\include;..\..\..\components\drivers\touch;..\..\..\components\drivers\include;..\..\..\components\drivers\usb\usbdevice;..\..\..\components\finsh;..\..\..\components\libc\compilers\armlibc;..\..\..\components\libc\compilers\common;..\..\..\components\utilities\mod_input;..\..\..\components\utilities\mod_trans;..\..\..\components\utilities\ui;..\..\..\components\utilities\ulog;..\..\..\components\utilities\ymodem;..\..\..\components\utilities\utils_list;..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Inc;..\libraries\STM32F4xx_HAL\CMSIS\Device\ST\STM32F4xx\Include;..\libraries\STM32F4xx_HAL\CMSIS\Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -370,7 +370,7 @@
             <TextAddressRange>0x08000000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
             <pXoBase></pXoBase>
-            <ScatterFile>.\board\linker_scripts\link.sct</ScatterFile>
+            <ScatterFile>.\board\linker_scripts\bootloader_link\link.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
             <Misc></Misc>
@@ -509,9 +509,9 @@
               <FilePath>..\libraries\HAL_Drivers\drv_gpio.c</FilePath>
             </File>
             <File>
-              <FileName>drv_usart.c</FileName>
+              <FileName>drv_usartX.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\libraries\HAL_Drivers\drv_usart.c</FilePath>
+              <FilePath>..\libraries\HAL_Drivers\drv_usartX.c</FilePath>
             </File>
             <File>
               <FileName>drv_spi.c</FileName>
@@ -542,6 +542,11 @@
               <FileName>drv_usbd.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\libraries\HAL_Drivers\drv_usbd.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_pulse_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\libraries\HAL_Drivers\drv_pulse_encoder.c</FilePath>
             </File>
             <File>
               <FileName>drv_common.c</FileName>
@@ -1842,14 +1847,29 @@
               <FilePath>..\..\..\components\drivers\misc\pin.c</FilePath>
             </File>
             <File>
+              <FileName>pulse_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\drivers\misc\pulse_encoder.c</FilePath>
+            </File>
+            <File>
+              <FileName>input_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\drivers\misc\input_encoder.c</FilePath>
+            </File>
+            <File>
               <FileName>input_ts.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\drivers\misc\input_ts.c</FilePath>
             </File>
             <File>
-              <FileName>serial.c</FileName>
+              <FileName>input_keypad.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\components\drivers\serial\serial.c</FilePath>
+              <FilePath>..\..\..\components\drivers\misc\input_keypad.c</FilePath>
+            </File>
+            <File>
+              <FileName>serialX.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\drivers\serial\serialX.c</FilePath>
             </File>
             <File>
               <FileName>spi_core.c</FileName>
@@ -2104,22 +2124,32 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>Utilities</GroupName>
+          <Files>
+            <File>
+              <FileName>ulog.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\utilities\ulog\ulog.c</FilePath>
+            </File>
+            <File>
+              <FileName>console_be.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\utilities\ulog\backend\console_be.c</FilePath>
+            </File>
+            <File>
+              <FileName>ymodem.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\utilities\ymodem\ymodem.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>utils_list</GroupName>
           <Files>
             <File>
               <FileName>utils_list.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\utilities\utils_list\utils_list.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Utilities</GroupName>
-          <Files>
-            <File>
-              <FileName>ymodem.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\utilities\ymodem\ymodem.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -2257,6 +2287,21 @@
               <FilePath>..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Src\stm32f4xx_ll_usb.c</FilePath>
             </File>
             <File>
+              <FileName>stm32f4xx_hal_tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_tim.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f4xx_hal_tim_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_tim_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f4xx_hal_lptim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_lptim.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f4xx_ll_fmc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Src\stm32f4xx_ll_fmc.c</FilePath>
@@ -2326,7 +2371,7 @@
   <LayerInfo>
     <Layers>
       <Layer>
-        <LayName>project</LayName>
+        <LayName>template</LayName>
         <LayPrjMark>1</LayPrjMark>
       </Layer>
     </Layers>

@@ -28,6 +28,7 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 
+#ifdef RT_USING_SERIAL_V1
 #define DBG_TAG    "UART"
 #define DBG_LVL    DBG_INFO
 #include <rtdbg.h>
@@ -1286,4 +1287,4 @@ void rt_hw_serial_isr(struct rt_serial_device *serial, int event)
 #endif /* RT_SERIAL_USING_DMA */
     }
 }
-
+#endif

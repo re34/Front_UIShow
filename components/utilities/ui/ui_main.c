@@ -8,13 +8,13 @@
 
 
 const char* app_names_symbol[] = {
-	MY_SYMBOL_HISTORY,
-	MY_SYMBOL_SUMMARY,
+	MY_SYMBOL_FIBER_CONFIG,
 	MY_SYMBOL_SETTING,
+	MY_SYMBOL_LD_CONFIG,
 };
 
 const char* app_names[] = {
-    "TA Setting","Summary","LD Setting",
+    "FIBER Setting","Summary","DFB Setting",
 };
 
 

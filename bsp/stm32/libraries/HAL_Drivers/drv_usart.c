@@ -12,7 +12,8 @@
 #include "drv_usart.h"
 #include "drv_config.h"
 
-#ifdef RT_USING_SERIAL
+
+#ifdef RT_USING_SERIAL_V1
 
 //#define DRV_DEBUG
 #define LOG_TAG             "drv.usart"
@@ -93,6 +94,57 @@ static struct stm32_uart_config uart_config[] =
 
 static struct stm32_uart uart_obj[sizeof(uart_config) / sizeof(uart_config[0])] = {0};
 
+
+//add by lxy
+//根据不同的串口配置，读取USART->DR数据时有对应的掩码
+static rt_uint32_t stm32_uart_get_DataMask(rt_uint32_t word_length, rt_uint32_t parity)
+{
+    rt_uint32_t mask;
+    if (word_length == UART_WORDLENGTH_8B)
+    {
+        if (parity == UART_PARITY_NONE)
+        {
+            mask = 0x00FFU ;
+        }
+        else
+        {
+            mask = 0x007FU ;
+        }
+    }
+#ifdef UART_WORDLENGTH_9B
+    else if (word_length == UART_WORDLENGTH_9B)
+    {
+        if (parity == UART_PARITY_NONE)
+        {
+            mask = 0x01FFU ;
+        }
+        else
+        {
+            mask = 0x00FFU ;
+        }
+    }
+#endif
+#ifdef UART_WORDLENGTH_7B
+    else if (word_length == UART_WORDLENGTH_7B)
+    {
+        if (parity == UART_PARITY_NONE)
+        {
+            mask = 0x007FU ;
+        }
+        else
+        {
+            mask = 0x003FU ;
+        }
+    }
+    else
+    {
+        mask = 0x0000U;
+    }
+#endif
+    return mask;
+}
+
+
 static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_configure *cfg)
 {
     struct stm32_uart *uart;
@@ -103,54 +155,69 @@ static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_c
 
     uart->handle.Instance          = uart->config->Instance;
     uart->handle.Init.BaudRate     = cfg->baud_rate;
-    uart->handle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
     uart->handle.Init.Mode         = UART_MODE_TX_RX;
     uart->handle.Init.OverSampling = UART_OVERSAMPLING_16;
+	switch(cfg->flowcontrol)
+	{
+		case RT_SERIAL_FLOWCONTROL_NONE:
+			uart->handle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+			break;
+		case RT_SERIAL_FLOWCONTROL_CTSRTS:
+			uart->handle.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
+			break;
+		default:
+			uart->handle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+			break;
+	}
     switch (cfg->data_bits)
     {
-    case DATA_BITS_8:
-        uart->handle.Init.WordLength = UART_WORDLENGTH_8B;
-        break;
-    case DATA_BITS_9:
-        uart->handle.Init.WordLength = UART_WORDLENGTH_9B;
-        break;
-    default:
-        uart->handle.Init.WordLength = UART_WORDLENGTH_8B;
-        break;
+	    case DATA_BITS_8:
+			if (cfg->parity == PARITY_ODD || cfg->parity == PARITY_EVEN)
+	        	uart->handle.Init.WordLength = UART_WORDLENGTH_9B;
+			else
+				uart->handle.Init.WordLength = UART_WORDLENGTH_8B;
+	        break;
+	    case DATA_BITS_9:
+	        uart->handle.Init.WordLength = UART_WORDLENGTH_9B;
+	        break;
+	    default:
+	        uart->handle.Init.WordLength = UART_WORDLENGTH_8B;
+	        break;
     }
     switch (cfg->stop_bits)
     {
-    case STOP_BITS_1:
-        uart->handle.Init.StopBits   = UART_STOPBITS_1;
-        break;
-    case STOP_BITS_2:
-        uart->handle.Init.StopBits   = UART_STOPBITS_2;
-        break;
-    default:
-        uart->handle.Init.StopBits   = UART_STOPBITS_1;
-        break;
+	    case STOP_BITS_1:
+	        uart->handle.Init.StopBits   = UART_STOPBITS_1;
+	        break;
+	    case STOP_BITS_2:
+	        uart->handle.Init.StopBits   = UART_STOPBITS_2;
+	        break;
+	    default:
+	        uart->handle.Init.StopBits   = UART_STOPBITS_1;
+	        break;
     }
     switch (cfg->parity)
     {
-    case PARITY_NONE:
-        uart->handle.Init.Parity     = UART_PARITY_NONE;
-        break;
-    case PARITY_ODD:
-        uart->handle.Init.Parity     = UART_PARITY_ODD;
-        break;
-    case PARITY_EVEN:
-        uart->handle.Init.Parity     = UART_PARITY_EVEN;
-        break;
-    default:
-        uart->handle.Init.Parity     = UART_PARITY_NONE;
-        break;
+	    case PARITY_NONE:
+	        uart->handle.Init.Parity     = UART_PARITY_NONE;
+	        break;
+	    case PARITY_ODD:
+	        uart->handle.Init.Parity     = UART_PARITY_ODD;
+	        break;
+	    case PARITY_EVEN:
+	        uart->handle.Init.Parity     = UART_PARITY_EVEN;
+	        break;
+	    default:
+	        uart->handle.Init.Parity     = UART_PARITY_NONE;
+	        break;
     }
+	//add by lxy 
+	uart->config->data_mask = stm32_uart_get_DataMask(uart->handle.Init.WordLength, uart->handle.Init.Parity);
 
-    if (HAL_UART_Init(&uart->handle) != HAL_OK)
+	if (HAL_UART_Init(&uart->handle) != HAL_OK)
     {
         return -RT_ERROR;
     }
-
     return RT_EOK;
 }
 
@@ -876,12 +943,26 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
     uart = (struct stm32_uart *)huart;
     dma_isr(&uart->serial);
 }
+/**
+  * @brief  HAL_UART_TxCpltCallback
+  * @param  huart: UART handle
+  * @note   This callback can be called by two functions, first in UART_EndTransmit_IT when
+  *         UART Tx complete and second in UART_DMATransmitCplt function in DMA Circular mode.
+  * @retval None
+  */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     struct stm32_uart *uart;
+    rt_size_t dma_cnt;
+	
     RT_ASSERT(huart != NULL);
     uart = (struct stm32_uart *)huart;
-    rt_hw_serial_isr(&uart->serial, RT_SERIAL_EVENT_TX_DMADONE);
+	//新增剩余数据长度判断
+    dma_cnt = __HAL_DMA_GET_COUNTER(&(uart->dma_tx.handle));
+    if (dma_cnt == 0)
+    {
+        rt_hw_serial_isr(&uart->serial, RT_SERIAL_EVENT_TX_DMADONE);
+    }
 }
 #endif  /* RT_SERIAL_USING_DMA */
 
@@ -975,7 +1056,6 @@ static void stm32_uart_get_dma_config(void)
 int rt_hw_usart_init(void)
 {
     rt_size_t obj_num = sizeof(uart_obj) / sizeof(struct stm32_uart);
-    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
     rt_err_t result = 0;
 
     stm32_uart_get_dma_config();
@@ -983,9 +1063,10 @@ int rt_hw_usart_init(void)
     for (int i = 0; i < obj_num; i++)
     {
         uart_obj[i].config = &uart_config[i];
-        uart_obj[i].serial.ops    = &stm32_uart_ops;
-        uart_obj[i].serial.config = config;
-        /* register UART device */
+        uart_obj[i].serial.ops = &stm32_uart_ops;
+
+        /* 硬件层配置初始化后，将接口注册到驱动层，驱动层中会进一步将接口注册到应用层 */
+		//注册到驱动层
         result = rt_hw_serial_register(&uart_obj[i].serial, uart_obj[i].config->name,
                                        RT_DEVICE_FLAG_RDWR
                                        | RT_DEVICE_FLAG_INT_RX
@@ -999,3 +1080,5 @@ int rt_hw_usart_init(void)
 }
 
 #endif /* RT_USING_SERIAL */
+
+#endif

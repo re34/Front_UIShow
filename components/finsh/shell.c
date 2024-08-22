@@ -164,6 +164,24 @@ void finsh_set_prompt_mode(rt_uint32_t prompt_mode)
     shell->prompt_mode = prompt_mode;
 }
 
+
+
+//add by lxy
+#ifdef RT_USING_SERIAL_X
+
+int finsh_instream(char *buf, int len)
+{
+#if !defined(RT_USING_POSIX) && defined(RT_USING_DEVICE)
+	int i;   
+		RT_ASSERT(shell != RT_NULL);   
+		i = rt_device_read(shell->device, -1, buf, len);   
+		return i;
+#else   
+		extern char rt_hw_console_getchar(void);   
+		return rt_hw_console_getchar();
+#endif /* RT_USING_DEVICE */
+}
+#else
 static int finsh_getchar(void)
 {
 #ifdef RT_USING_DEVICE
@@ -184,7 +202,11 @@ static int finsh_getchar(void)
 #endif
 }
 
+#endif
+
 #if !defined(RT_USING_POSIX) && defined(RT_USING_DEVICE)
+
+#if !defined(RT_USING_SERIAL_X)
 static rt_err_t finsh_rx_ind(rt_device_t dev, rt_size_t size)
 {
     RT_ASSERT(shell != RT_NULL);
@@ -194,7 +216,7 @@ static rt_err_t finsh_rx_ind(rt_device_t dev, rt_size_t size)
 
     return RT_EOK;
 }
-
+#endif
 /**
  * @ingroup finsh
  *
@@ -232,7 +254,9 @@ void finsh_set_device(const char *device_name)
         shell->line_curpos = shell->line_position = 0;
 
         shell->device = dev;
+#ifndef RT_USING_SERIAL_X
         rt_device_set_rx_indicate(dev, finsh_rx_ind);
+#endif
     }
 }
 
@@ -497,10 +521,236 @@ static void shell_push_history(struct finsh_shell *shell)
 }
 #endif
 
+
+static void finsh_handle_onebyte(int ch)
+{
+	static int last_ch = 0x20;
+	if (ch < 0)
+	{
+		return;
+	}
+	/*
+	 * handle control key
+	 * up key  : 0x1b 0x5b 0x41
+	 * down key: 0x1b 0x5b 0x42
+	 * right key:0x1b 0x5b 0x43
+	 * left key: 0x1b 0x5b 0x44
+	 */
+	if (ch == 0x1b)
+	{
+		shell->stat = WAIT_SPEC_KEY;
+		return;
+	}
+	else if (shell->stat == WAIT_SPEC_KEY)
+	{
+		if (ch == 0x5b)
+		{
+			shell->stat = WAIT_FUNC_KEY;
+			return;
+		}
+		shell->stat = WAIT_NORMAL;
+	}
+	else if (shell->stat == WAIT_FUNC_KEY)
+	{
+		shell->stat = WAIT_NORMAL;
+
+		if (ch == 0x41) /* up key */
+		{
+#ifdef FINSH_USING_HISTORY
+			/* prev history */
+			if (shell->current_history > 0)
+				shell->current_history --;
+			else
+			{
+				shell->current_history = 0;
+				return;
+			}
+			/* copy the history command */
+			memcpy(shell->line, &shell->cmd_history[shell->current_history][0],
+				   FINSH_CMD_SIZE);
+			shell->line_curpos = shell->line_position = strlen(shell->line);
+			shell_handle_history(shell);
+#endif
+			return;
+		}
+		else if (ch == 0x42) /* down key */
+		{
+#ifdef FINSH_USING_HISTORY
+			/* next history */
+			if (shell->current_history < shell->history_count - 1)
+				shell->current_history ++;
+			else
+			{
+				/* set to the end of history */
+				if (shell->history_count != 0)
+					shell->current_history = shell->history_count - 1;
+				else
+					return;
+			}
+
+			memcpy(shell->line, &shell->cmd_history[shell->current_history][0],
+				   FINSH_CMD_SIZE);
+			shell->line_curpos = shell->line_position = strlen(shell->line);
+			shell_handle_history(shell);
+#endif
+			return;
+		}
+		else if (ch == 0x44) /* left key */
+		{
+			if (shell->line_curpos)
+			{
+				rt_kprintf("\b");
+				shell->line_curpos --;
+			}
+
+			return;
+		}
+		else if (ch == 0x43) /* right key */
+		{
+			if (shell->line_curpos < shell->line_position)
+			{
+				rt_kprintf("%c", shell->line[shell->line_curpos]);
+				shell->line_curpos ++;
+			}
+
+			return;
+		}
+	}
+
+	/* received null or error */
+	if (ch == '\0' || ch == 0xFF) return;
+	/* handle tab key */
+	else if (ch == '\t')
+	{
+		int i;
+		/* move the cursor to the beginning of line */
+		for (i = 0; i < shell->line_curpos; i++)
+			rt_kprintf("\b");
+
+		/* auto complete */
+		shell_auto_complete(&shell->line[0]);
+		/* re-calculate position */
+		shell->line_curpos = shell->line_position = strlen(shell->line);
+
+		return;
+	}
+	/* handle backspace key */
+	else if (ch == 0x7f || ch == 0x08)
+	{
+		/* note that shell->line_curpos >= 0 */
+		if (shell->line_curpos == 0)
+			return;
+
+		shell->line_position--;
+		shell->line_curpos--;
+
+		if (shell->line_position > shell->line_curpos)
+		{
+			int i;
+
+			rt_memmove(&shell->line[shell->line_curpos],
+					   &shell->line[shell->line_curpos + 1],
+					   shell->line_position - shell->line_curpos);
+			shell->line[shell->line_position] = 0;
+
+			rt_kprintf("\b%s  \b", &shell->line[shell->line_curpos]);
+
+			/* move the cursor to the origin position */
+			for (i = shell->line_curpos; i <= shell->line_position; i++)
+				rt_kprintf("\b");
+		}
+		else
+		{
+			rt_kprintf("\b \b");
+			shell->line[shell->line_position] = 0;
+		}
+
+		return;
+	}
+	if (last_ch == '\r' && ch == '\n') 
+	{	   
+		last_ch = ch;		
+		return;   
+	}
+
+	/* handle end of line, break */
+	if (ch == '\r' || ch == '\n')
+	{
+#ifdef FINSH_USING_HISTORY
+		shell_push_history(shell);
+#endif
+
+#ifdef FINSH_USING_MSH
+		if (msh_is_used() == RT_TRUE)
+		{
+			if (shell->echo_mode)
+				rt_kprintf("\n");
+			msh_exec(shell->line, shell->line_position);
+		}
+		else
+#endif
+		{
+#ifndef FINSH_USING_MSH_ONLY
+			/* add ';' and run the command line */
+			shell->line[shell->line_position] = ';';
+
+			if (shell->line_position != 0) finsh_run_line(&shell->parser, shell->line);
+			else
+				if (shell->echo_mode) rt_kprintf("\n");
+#endif
+		}
+
+		rt_kprintf(FINSH_PROMPT);
+		memset(shell->line, 0, sizeof(shell->line));
+		shell->line_curpos = shell->line_position = 0;
+		last_ch = ch;
+		return;
+	}
+
+	/* it's a large line, discard it */
+	if (shell->line_position >= FINSH_CMD_SIZE)
+		shell->line_position = 0;
+
+	/* normal character */
+	if (shell->line_curpos < shell->line_position)
+	{
+		int i;
+
+		rt_memmove(&shell->line[shell->line_curpos + 1],
+				   &shell->line[shell->line_curpos],
+				   shell->line_position - shell->line_curpos);
+		shell->line[shell->line_curpos] = ch;
+		if (shell->echo_mode)
+			rt_kprintf("%s", &shell->line[shell->line_curpos]);
+
+		/* move the cursor to new position */
+		for (i = shell->line_curpos; i < shell->line_position; i++)
+			rt_kprintf("\b");
+	}
+	else
+	{
+		shell->line[shell->line_position] = ch;
+		if (shell->echo_mode)
+			rt_kprintf("%c", ch);
+	}
+
+	last_ch = ch;//ch = 0;
+	shell->line_position ++;
+	shell->line_curpos++;
+	if (shell->line_position >= FINSH_CMD_SIZE)
+	{
+		/* clear command line */
+		shell->line_position = 0;
+		shell->line_curpos = 0;
+	}
+} /* end of device read */
+
+
 void finsh_thread_entry(void *parameter)
 {
-    int ch;
 
+	int i, cnt;
+	char istream[32];
     /* normal is echo mode */
 #ifndef FINSH_ECHO_DISABLE_DEFAULT
     shell->echo_mode = 1;
@@ -541,6 +791,15 @@ void finsh_thread_entry(void *parameter)
 
     while (1)
     {
+
+#ifdef RT_USING_SERIAL_X    
+		cnt = finsh_instream(istream, 32);
+		for(i = 0; i < cnt; i++)
+		{
+			finsh_handle_onebyte(istream[i]);
+		}
+#else
+				int ch;		
         ch = finsh_getchar();
         if (ch < 0)
         {
@@ -758,6 +1017,8 @@ void finsh_thread_entry(void *parameter)
             shell->line_curpos = 0;
         }
     } /* end of device read */
+#endif
+}
 }
 
 void finsh_system_function_init(const void *begin, const void *end)

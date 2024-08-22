@@ -98,11 +98,11 @@ static void loginCheck_event_cb(lv_event_t *e)
 		{
 			 login_Dialog.bCheckFlag = Dialog_Type_Success;
 			 lv_label_set_text(login_Dialog.title, "登录成功!");
-			 _settingUI.bIsAdmin = Authority_Developer;
+			 _settingUI.bIsAdmin = ROLE_DEVELOPER;
 		}else{
 			login_Dialog.bCheckFlag = Dialog_Type_Fail;
 			lv_label_set_text(login_Dialog.title, "登录失败!");
-			 _settingUI.bIsAdmin = Authority_User;
+			 _settingUI.bIsAdmin = ROLE_USER;
 		}
 		//弹出提示框
 		if(lv_obj_has_flag(login_Dialog.cont, LV_OBJ_FLAG_HIDDEN))
@@ -130,7 +130,7 @@ static void loginCancel_event_cb(lv_event_t *e)
 *********************************************************/
 static void loginShow_event_cb(lv_event_t* e)
 {
-	if(_settingUI.bIsAdmin == Authority_Developer)
+	if(_settingUI.bIsAdmin == ROLE_DEVELOPER)
 		return;
 	if(e->code == LV_EVENT_CLICKED)
 	{
@@ -139,7 +139,7 @@ static void loginShow_event_cb(lv_event_t* e)
 	}else if(e->code == LV_EVENT_VALUE_CHANGED){
 		//快捷登录
 		lv_label_set_text(login_Dialog.title, "登录成功!");		
-		_settingUI.bIsAdmin = Authority_Developer;
+		_settingUI.bIsAdmin = ROLE_DEVELOPER;
 		Gui_DialogShow(&login_Dialog, NULL, Dialog_Type_Success);
 	}
 }
@@ -241,7 +241,7 @@ void Gui_loginInit(void)
 	lv_obj_t *login_Icon = lv_label_create(loginEntry);
 	lv_obj_set_style_text_color(login_Icon, lv_color_white(), LV_PART_MAIN);
     lv_obj_set_style_text_font(login_Icon, &font_symbol_20, LV_PART_MAIN);
-	if(_settingUI.bIsAdmin == Authority_Developer)
+	if(_settingUI.bIsAdmin == ROLE_DEVELOPER)
 		lv_label_set_text(login_Icon, MY_ICON_USER_OK);	
 	else
 		lv_label_set_text(login_Icon, MY_ICON_LOGIN2);

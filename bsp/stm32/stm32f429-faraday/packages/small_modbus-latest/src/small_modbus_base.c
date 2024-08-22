@@ -6,6 +6,7 @@
  */
 #include "small_modbus_base.h"
 #include "small_modbus_utils.h"
+#include "ulog.h"
 
 int _modbus_init(small_modbus_t *smb)
 {
@@ -16,11 +17,7 @@ int _modbus_init(small_modbus_t *smb)
         smb->transfer_id = 0;
         smb->protocol_id = 0;
         smb->debug_level = 2; // log level info
-        if (smb->timeout_frame == 0)
-        {
-            //smb->timeout_frame = 100;
-            smb->timeout_frame = 100;
-        }
+        smb->timeout_frame = 100;  //默认100ms
         if (smb->timeout_byte == 0)
         {
             smb->timeout_byte = 10;
@@ -152,24 +149,43 @@ int modbus_wait(small_modbus_t *smb, int timeout)
     return ret;
 }
 
+
+int modbus_set_wait_time(small_modbus_t *smb, int32_t wait_time)
+{
+    int ret = MODBUS_FAIL;
+
+    ret = modbus_context_check(smb);
+    if( MODBUS_OK != ret )
+    {
+        goto __exit;
+    }
+    if(NULL != smb->port->control)
+    {
+        ret = smb->port->control(smb, RT_DEVICE_CTRL_TIMEOUT, (void *)wait_time);
+    }
+    __exit:
+    return ret;
+}
+
 int modbus_want_read(small_modbus_t *smb, uint8_t *buff, uint16_t len, int32_t wait_time)
 {
     uint8_t *read_buff = buff;
     uint16_t read_len = 0;
-    int rc = MODBUS_FAIL;
-
+	int ret = -1;
+	
+	modbus_set_wait_time(smb, wait_time);
     do
     {
-        read_len += modbus_read(smb, read_buff + read_len, len - read_len);
-        if (read_len >= len)
-        {
-            return read_len; // read ok
-        }
-        rc = modbus_wait(smb, wait_time);
-    } while (rc >= MODBUS_OK);
-
-    return rc; // happen An error occurred
+        ret = modbus_read(smb, read_buff + read_len, len - read_len);
+		//超时或其他错误，直接返回
+		if(ret <= 0)
+			return ret;
+		else	
+			read_len += ret;
+    }while (read_len < len);
+    return read_len; 
 }
+
 
 int modbus_error_recovery(small_modbus_t *smb)
 {
@@ -180,10 +196,12 @@ int modbus_error_recovery(small_modbus_t *smb)
     {
         goto __exit;
     }
+#if 0	
     if( NULL != smb->port->flush )
     {
         ret = smb->port->flush(smb);
     }
+#endif
     __exit:
     return ret;
 }
@@ -199,6 +217,8 @@ int modbus_error_exit(small_modbus_t *smb, int code)
     }
     return ret;
 }
+
+
 
 /* set frame timeout (ms) */
 int modbus_set_frame_timeout(small_modbus_t *smb, int timeout_ms)
@@ -258,7 +278,7 @@ int modbus_set_debug(small_modbus_t *smb, int level)
     return ret;
 }
 
-/* master start request */
+/* 主机发送 */
 int modbus_start_request(small_modbus_t *smb, uint8_t *request, int function, int addr, int num, void *write_data)
 {
     int ret = MODBUS_OK;
@@ -274,9 +294,13 @@ int modbus_start_request(small_modbus_t *smb, uint8_t *request, int function, in
     //check funcode addr num
     if (modbus_check_addr_num(function, addr, num))
     {
-        //build modbus header data
+        /*************************************
+        *	1. 构建帧头，存入request数组中
+        *************************************/
         len = smb->core->build_request_header(smb, request, smb->slave_addr, function, addr, num);
-        //build modbus reg/coil data
+        /*************************************
+        *	2. 根据不同的modbus功能码填充指令
+        *************************************/
         switch (function)
         {
             case MODBUS_FC_WRITE_SINGLE_COIL:
@@ -313,11 +337,15 @@ int modbus_start_request(small_modbus_t *smb, uint8_t *request, int function, in
             }
             break;
             default:
-
             break;
         }
-        //send prepare
+        /*************************************
+        *	3. 生成CRC16校验码
+        *************************************/
         ret = smb->core->check_send_pre(smb, request, len);
+        /*************************************
+        *	4. 发送
+        *************************************/		
         if (ret > 0)
         {
             len = ret;
@@ -331,114 +359,40 @@ int modbus_start_request(small_modbus_t *smb, uint8_t *request, int function, in
     return ret;
 }
 /* master wait for confirmation message */
-int modbus_wait_confirm(small_modbus_t *smb, uint8_t *response)
+
+//主机等待接收
+int modbus_wait_confirm(small_modbus_t *smb, int read_want, uint8_t *response)
 {
     int ret = MODBUS_OK;
-    int wait_time = 0;
-    int read_want = 0;
-    int read_length = 0;
-    int read_position = 0;
-    int function = 0;
 
     ret = modbus_context_check(smb);
     if( MODBUS_OK != ret )
     {
         goto __exit;
     }
-
-    wait_time = smb->timeout_frame;
-    read_want = smb->core->len_header + 1; // header + function code
-
-    while (read_want != 0)
+	
+    if(read_want != 0)
     {
-        ret = modbus_want_read(smb, response + read_length, read_want, wait_time);
-        if (MODBUS_OK > ret)
-        {
-            //modbus_debug_error(smb, "[%d]read(%d) error\n", ret, read_want);
-            goto __exit;
-        }
+    	/**********************************************************
+    	*1. 阻塞（有超时时间）读取modbus 应答消息, 直到获取到期望的数据长度
+    	*********************************************************/
+        ret = modbus_want_read(smb, response, read_want, smb->timeout_frame);
         if (ret != read_want)
         {
-            modbus_debug_info(smb, "[%d]read(%d) less\n", ret, read_want);
+             LOG_D("[%d]read(%d) error", ret, read_want);
         }
-
-        read_length += ret;     // sum byte length
-        read_want -= ret;       // sub byte length
-
-        if (read_want == 0) // read ok
+        else // read ok
         {
-            if (read_position == 0) /* Function code position */
-            {
-                function = response[smb->core->len_header];
-                switch (function)
-                {
-                case MODBUS_FC_READ_HOLDING_COILS:
-                case MODBUS_FC_READ_INPUTS_COILS:
-                case MODBUS_FC_READ_HOLDING_REGISTERS:
-                case MODBUS_FC_READ_INPUT_REGISTERS:
-                    read_want = 1; // read data length(1)
-                    break;
-                case MODBUS_FC_WRITE_SINGLE_COIL:
-                case MODBUS_FC_WRITE_SINGLE_REGISTER:
-                case MODBUS_FC_WRITE_MULTIPLE_COILS:
-                case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
-                    read_want = 4; // write addr(2)+num(2)
-                    break;
-                case MODBUS_FC_MASK_WRITE_REGISTER:
-                    read_want = 6; // data length
-                    break;
-                default:
-                {
-                    read_want = 1; // read data length(1)
-                }
-                break;
-                }
-                read_position = 1;
-            }
-            else if (read_position == 1) /* Data */
-            {
-                function = response[smb->core->len_header];
-                switch (function)
-                {
-                case MODBUS_FC_READ_HOLDING_COILS:
-                case MODBUS_FC_READ_INPUTS_COILS:
-                case MODBUS_FC_READ_HOLDING_REGISTERS:
-                case MODBUS_FC_READ_INPUT_REGISTERS:
-                    read_want = response[smb->core->len_header + 1];
-                    break;
-                case MODBUS_FC_WRITE_SINGLE_COIL:
-                case MODBUS_FC_WRITE_SINGLE_REGISTER:
-                case MODBUS_FC_WRITE_MULTIPLE_COILS:
-                case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
-                {
-                    read_want = 0;
-                }
-                break;
-                default:
-                {
-                    read_want = 0;
-                }
-                break;
-                }
-                read_want += smb->core->len_checksum;
-                if ((read_want + read_length) > smb->core->len_adu_max)
-                {
-                    modbus_debug_error(smb, "More than ADU %d > %d\n", (read_want + read_length), smb->core->len_adu_max);
-                    ret = MODBUS_FAIL_CONFIRM;
-                    goto __exit;
-                }
-                read_position = 2;
-            }
-        }
-        if (read_want)
-        {
-            wait_time = smb->timeout_byte * read_want; // byte_time * byte_num
+			/**********************************************************
+			*2. 进行数据校验
+			*********************************************************/
+    		ret = smb->core->check_wait_response(smb, response, read_want);
         }
     }
-    ret = smb->core->check_wait_response(smb, response, read_length);
     __exit:
     return ret;
 }
+
 /* master handle confirmation message */
 int modbus_handle_confirm(small_modbus_t *smb, uint8_t *request, uint16_t request_len, uint8_t *response, uint16_t response_len, void *read_data)
 {
@@ -560,12 +514,14 @@ int modbus_handle_confirm(small_modbus_t *smb, uint8_t *request, uint16_t reques
     return ret;
 }
 
-/* master read */
+/* 读保持线圈状态*/
 int modbus_read_bits(small_modbus_t *smb, int addr, int num, uint8_t *read_data)
 {
     int ret = MODBUS_OK;
     int request_len = 0;
     int response_len = 0;
+	int read_want = 0;
+	
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
 
@@ -574,7 +530,7 @@ int modbus_read_bits(small_modbus_t *smb, int addr, int num, uint8_t *read_data)
     {
         goto __exit;
     }
-
+	read_want = smb->core->len_header + smb->core->len_checksum + num + 2;
     // start request
     ret = modbus_start_request(smb, request, MODBUS_FC_READ_HOLDING_COILS, addr, num, NULL);
     if (0 > ret)
@@ -584,7 +540,7 @@ int modbus_read_bits(small_modbus_t *smb, int addr, int num, uint8_t *read_data)
     request_len = ret;
 
     // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
+    ret = modbus_wait_confirm(smb, read_want, response);
     if (0 >= ret)
     {
         goto __exit;
@@ -598,12 +554,13 @@ int modbus_read_bits(small_modbus_t *smb, int addr, int num, uint8_t *read_data)
     return ret;
 }
 
-/* master read */
+/* 读取输入线圈状态 */
 int modbus_read_input_bits(small_modbus_t *smb, int addr, int num, uint8_t *read_data)
 {
     int ret = MODBUS_OK;
     int request_len = 0;
     int response_len = 0;
+	int read_want = 0;
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
 
@@ -612,6 +569,7 @@ int modbus_read_input_bits(small_modbus_t *smb, int addr, int num, uint8_t *read
     {
         goto __exit;
     }
+	read_want = smb->core->len_header + smb->core->len_checksum + num + 2;
 
     // start request
     ret = modbus_start_request(smb, request, MODBUS_FC_READ_INPUTS_COILS, addr, num, NULL);
@@ -622,7 +580,7 @@ int modbus_read_input_bits(small_modbus_t *smb, int addr, int num, uint8_t *read
     request_len = ret;
 
     // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
+    ret = modbus_wait_confirm(smb, read_want, response);
     if (0 >= ret)
     {
         goto __exit;
@@ -635,7 +593,8 @@ int modbus_read_input_bits(small_modbus_t *smb, int addr, int num, uint8_t *read
     __exit:
     return ret;
 }
-/* master read */
+
+/* 读取多个保持寄存器 */ 
 int modbus_read_registers(small_modbus_t *smb, int addr, int num, uint16_t *read_data)
 {
     int ret = MODBUS_OK;
@@ -643,41 +602,45 @@ int modbus_read_registers(small_modbus_t *smb, int addr, int num, uint16_t *read
     int response_len = 0;
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
+	int read_want = 0;
 
     ret = modbus_context_check(smb);
     if( MODBUS_OK != ret )
     {
+		LOG_D("modbus_read_registers: modbus_context_check fail");		
         goto __exit;
     }
-
-    // start request
+	read_want = smb->core->len_header + smb->core->len_checksum + num * 2 + 2;
+    //发送modbus请求
     ret = modbus_start_request(smb, request, MODBUS_FC_READ_HOLDING_REGISTERS, addr, num, NULL);
     if (0 > ret)
     {
+		LOG_D("modbus_read_registers: modbus_start_request fail");	
         goto __exit;
     }
     request_len = ret;
-
-    // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
-    if (0 >= ret)
+    //等待接收数据
+    ret = modbus_wait_confirm(smb, read_want, response);
+    if (ret <= 0)
     {
+		LOG_D("modbus_read_registers: modbus_wait_confirm fail");	
         goto __exit;
     }
     response_len = ret;
-
     //check comfirm
     ret = modbus_handle_confirm(smb, request, request_len, response, response_len, read_data);
-
     __exit:
     return ret;
 }
-/* master read */
+
+
+/* 读取多个输入寄存器 */ 
 int modbus_read_input_registers(small_modbus_t *smb, int addr, int num, uint16_t *read_data)
 {
     int ret = MODBUS_OK;
     int request_len = 0;
     int response_len = 0;
+	int read_want = 0;
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
 
@@ -686,7 +649,7 @@ int modbus_read_input_registers(small_modbus_t *smb, int addr, int num, uint16_t
     {
         goto __exit;
     }
-
+	read_want = smb->core->len_header + smb->core->len_checksum + num * 2 + 2;
     // start request
     ret = modbus_start_request(smb, request, MODBUS_FC_READ_INPUT_REGISTERS, addr, num, NULL);
     if (0 > ret)
@@ -696,25 +659,28 @@ int modbus_read_input_registers(small_modbus_t *smb, int addr, int num, uint16_t
     request_len = ret;
 
     // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
+    ret = modbus_wait_confirm(smb, read_want, response);
     if (0 >= ret)
     {
         goto __exit;
     }
     response_len = ret;
-
     //check comfirm
     ret = modbus_handle_confirm(smb, request, request_len, response, response_len, read_data);
-
     __exit:
     return ret;
 }
+
+
 /* master write */
+//写单个线圈
 int modbus_write_bit(small_modbus_t *smb, int addr, int write_status)
 {
     int ret = MODBUS_OK;
     int request_len = 0;
     int response_len = 0;
+	int read_want = 0;
+	
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
     int status = write_status ? 0xFF00 : 0x0;
@@ -724,6 +690,7 @@ int modbus_write_bit(small_modbus_t *smb, int addr, int write_status)
     {
         goto __exit;
     }
+	read_want = smb->core->len_header + smb->core->len_checksum + 5;
 
     // start request
     ret = modbus_start_request(smb, request, MODBUS_FC_WRITE_SINGLE_COIL, addr, 1, &status);
@@ -734,7 +701,7 @@ int modbus_write_bit(small_modbus_t *smb, int addr, int write_status)
     request_len = ret;
 
     // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
+    ret = modbus_wait_confirm(smb, read_want, response);
     if (0 >= ret)
     {
         goto __exit;
@@ -748,11 +715,14 @@ int modbus_write_bit(small_modbus_t *smb, int addr, int write_status)
     return ret;
 }
 
+//写单个保持寄存器
 int modbus_write_register(small_modbus_t *smb, int addr, int write_value)
 {
     int ret = MODBUS_OK;
     int request_len = 0;
     int response_len = 0;
+	int read_want = 0;
+	
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
     int value = write_value;
@@ -762,6 +732,7 @@ int modbus_write_register(small_modbus_t *smb, int addr, int write_value)
     {
         goto __exit;
     }
+	read_want = smb->core->len_header + smb->core->len_checksum + 5;
 
     // start request
     ret = modbus_start_request(smb, request, MODBUS_FC_WRITE_SINGLE_REGISTER, addr, 1, &value);
@@ -772,25 +743,27 @@ int modbus_write_register(small_modbus_t *smb, int addr, int write_value)
     request_len = ret;
 
     // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
+    ret = modbus_wait_confirm(smb, read_want, response);
     if (0 >= ret)
     {
         goto __exit;
     }
     response_len = ret;
-
     //check comfirm
     ret = modbus_handle_confirm(smb, request, request_len, response, response_len, NULL);
-
     __exit:
     return ret;
 }
-/* master write */
+
+
+//写多个线圈
 int modbus_write_bits(small_modbus_t *smb, int addr, int num, uint8_t *write_data)
 {
     int ret = MODBUS_OK;
     int request_len = 0;
     int response_len = 0;
+	int read_want = 0;
+	
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
 
@@ -799,6 +772,7 @@ int modbus_write_bits(small_modbus_t *smb, int addr, int num, uint8_t *write_dat
     {
         goto __exit;
     }
+	read_want = smb->core->len_header + smb->core->len_checksum + 5;
 
     // start request
     ret = modbus_start_request(smb, request, MODBUS_FC_WRITE_MULTIPLE_COILS, addr, num, write_data);
@@ -807,27 +781,27 @@ int modbus_write_bits(small_modbus_t *smb, int addr, int num, uint8_t *write_dat
         goto __exit;
     }
     request_len = ret;
-
     // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
+    ret = modbus_wait_confirm(smb, read_want, response);
     if (0 >= ret)
     {
         goto __exit;
     }
     response_len = ret;
-
     //check comfirm
     ret = modbus_handle_confirm(smb, request, request_len, response, response_len, NULL);
-
     __exit:
     return ret;
 }
-/* master write */
+
+//写多个保持寄存器
 int modbus_write_registers(small_modbus_t *smb, int addr, int num, uint16_t *write_data)
 {
     int ret = MODBUS_OK;
     int request_len = 0;
     int response_len = 0;
+	int read_want = 0;
+	
     uint8_t *request = smb->write_buff;
     uint8_t *response = smb->read_buff;
 
@@ -836,7 +810,7 @@ int modbus_write_registers(small_modbus_t *smb, int addr, int num, uint16_t *wri
     {
         goto __exit;
     }
-
+	read_want = smb->core->len_header + smb->core->len_checksum + 5;
     // start request
     ret = modbus_start_request(smb, request, MODBUS_FC_WRITE_MULTIPLE_REGISTERS, addr, num, write_data);
     if (0 > ret)
@@ -846,19 +820,19 @@ int modbus_write_registers(small_modbus_t *smb, int addr, int num, uint16_t *wri
     request_len = ret;
 
     // wait slave comfirm
-    ret = modbus_wait_confirm(smb, response);
+    ret = modbus_wait_confirm(smb, read_want, response);
     if (0 >= ret)
     {
         goto __exit;
     }
     response_len = ret;
-
     //check comfirm
     ret = modbus_handle_confirm(smb, request, request_len, response, response_len, NULL);
-
     __exit:
     return ret;
 }
+
+
 /* master write and read */
 int modbus_mask_write_register(small_modbus_t *smb, int addr, uint16_t and_mask, uint16_t or_mask)
 {
