@@ -500,7 +500,12 @@ void Gui_dialog_Create(void)
 
     lv_obj_t * title = lv_label_create(cont);
 	lv_obj_set_style_text_color(title, lv_color_hex(0xf3b560), LV_PART_MAIN);
+
+#if !defined(USING_ENGLISH_VERSION)	
 	lv_obj_set_style_text_font(title, &font_ch_16, LV_PART_MAIN);
+#else
+	lv_obj_set_style_text_font(title, &font_tw_14, LV_PART_MAIN);
+#endif
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
 	ui_Dialog.title = title;
 	

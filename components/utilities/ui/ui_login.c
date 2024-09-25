@@ -35,7 +35,11 @@ void Gui_MsgboxCreate(lv_obj_t *winObj)
 	login_Dialog.cont = cont;
 
     lv_obj_t * title = lv_label_create(cont);
+#if !defined(USING_ENGLISH_VERSION)	
 	lv_obj_set_style_text_font(title, &font_ch_16, LV_PART_MAIN);
+#else
+	lv_obj_set_style_text_font(title, &font_tw_14, LV_PART_MAIN);
+#endif
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 20);
 	login_Dialog.bCheckFlag = Dialog_Type_Success;
 	login_Dialog.title = title;
@@ -171,8 +175,15 @@ void Gui_loginInit(void)
 	lv_obj_set_style_text_font(header, &lv_font_montserrat_22, LV_PART_MAIN);
 	lv_label_set_text(header, LV_SYMBOL_HOME);
 	lv_obj_t * label_title = lv_label_create(cont);
+#if !defined(USING_ENGLISH_VERSION)	
 	lv_obj_set_style_text_font(label_title, &font_ch_16, LV_PART_MAIN);
 	lv_label_set_text(label_title, "用户登录");
+
+#else
+	lv_obj_set_style_text_font(label_title, &font_tw_14, LV_PART_MAIN);
+	lv_label_set_text(label_title, "User Login");
+#endif
+
 	/*********************************************
 	* 2 .添加键盘
 	*********************************************/

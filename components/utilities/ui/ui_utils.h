@@ -449,6 +449,12 @@ extern lv_style_t style_Window;
 
 //开机logo字体
 LV_FONT_DECLARE(font_tw_15)
+
+
+#if defined(USING_ENGLISH_VERSION)	
+LV_FONT_DECLARE(font_tw_14)
+#endif
+
 //采集显示界面字体
 LV_FONT_DECLARE(font_bahnschrift_17)
 LV_FONT_DECLARE(font_bahnschrift_13)

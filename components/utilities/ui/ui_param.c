@@ -16,8 +16,37 @@
 
 struct _Ta_Setting _taUI;
 
+
 #if defined(RT_USING_USER_TRANSPORT)
 
+#if defined(USING_ENGLISH_VERSION)
+#if defined(USING_HVPZT_SCAN)
+const char* Ta_list[TA_HvPzt_NUMS_END] = {
+	"Current UserSet(mA)",
+	"Current workPoint(mA)",		
+	"Current Max(mA)",	
+	"Temper UserSet(℃)",
+	"Temper workPoint(℃)",
+	"Temper Min(℃)",	
+	"Temper Max(℃)",	
+	"Scan Bias(V)",	
+	"Scan Amp(V)",
+	"Scan Freq(HZ)",	
+};
+#else
+const char* Ta_list[TA_HvPzt_NUMS_END] = {
+  	"Current UserSet (mA)",
+	"Current workPoint(mA)",		
+	"Current Max(mA)",	
+	"Temper UserSet(℃)",
+	"Temper workPoint(℃)",
+	"Temper Min()",	
+	"Temper Max(℃)",	
+};
+
+#endif
+
+#else
 
 #if defined(USING_HVPZT_SCAN)
 const char* Ta_list[TA_HvPzt_NUMS_END] = {
@@ -44,6 +73,9 @@ const char* Ta_list[TA_HvPzt_NUMS_END] = {
 	"温度最大值(℃)",
 };
 #endif
+
+#endif
+
 
 const char* sample_icons[4] = {
 	MY_ICON_CURRENT,
@@ -277,6 +309,15 @@ void sampleGrp_MainCreate(lv_obj_t* parent)
 		LV_FLEX_ALIGN_CENTER
 	);
 	lv_obj_set_style_pad_row(parent, 6, LV_PART_MAIN); 	//设置各item之间的行间距
+#if defined(USING_ENGLISH_VERSION)	
+	const char* TextList[4] =
+	{
+		"Current Sample(mA)",
+		"Current UserSet(mA)",
+		"Temper Sample(℃)",
+		"Temper UserSet(℃)",
+	};
+#else
 	const char* TextList[4] =
 	{
 		"采样电流(mA)",
@@ -284,6 +325,7 @@ void sampleGrp_MainCreate(lv_obj_t* parent)
 		"采样温度(℃)",
 		"设置温度(℃)",
 	};
+#endif		
 	for (int i = 0; i < 4; i++)
 	{
 		lv_obj_t *itemLabel = lv_label_create(parent);
@@ -390,7 +432,11 @@ static void btn_save_cb(lv_event_t* event)
 	{
 		if(ui_Dialog.cont != NULL)
 		{
+#if defined(USING_ENGLISH_VERSION)	
+			lv_label_set_text(ui_Dialog.title, "Are you sure to save?");
+#else
 			lv_label_set_text(ui_Dialog.title, "是否保存参数?");
+#endif
 			Gui_DialogShow(&ui_Dialog, NULL, Dialog_Type_TaSave);
 		}
 	}			
@@ -403,8 +449,12 @@ static void btn_HvPzt_cb(lv_event_t* event)
 	if(event->code == LV_EVENT_CLICKED)
 	{
 		if(ui_Dialog.cont != NULL)
-		{	
+		{
+#if defined(USING_ENGLISH_VERSION)	
+			lv_label_set_text(ui_Dialog.title, sPara->chipVal.scanState == Power_Proc_Off?"Are you sure to open Scan?":"Are you sure to close Scan?");
+#else		
 			lv_label_set_text(ui_Dialog.title, sPara->chipVal.scanState == Power_Proc_Off?"是否开启扫描?":"是否关闭扫描?");
+#endif
 			Gui_DialogShow(&ui_Dialog, NULL, Dialog_Type_Power);
 		}
 	}
@@ -488,7 +538,11 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_size(root, LV_HOR_RES, LV_VER_RES);
 	lv_obj_set_style_border_width(root, 0, LV_PART_MAIN);
 	lv_obj_set_style_radius(root, 0, LV_PART_MAIN);
+#if !defined(USING_ENGLISH_VERSION)	
 	lv_obj_set_style_text_font(root, &font_ch_16, LV_PART_MAIN);
+#else
+	lv_obj_set_style_text_font(root, &font_tw_14, LV_PART_MAIN);
+#endif
 	lv_obj_set_style_bg_color(root, lv_color_hex(0x20253b), LV_PART_MAIN);
 	_taUI._taCont = root;
 	Gui_AddToIndevGroup(root);
