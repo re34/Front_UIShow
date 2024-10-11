@@ -22,13 +22,13 @@ struct _Ta_Setting _taUI;
 #if defined(USING_ENGLISH_VERSION)
 #if defined(USING_HVPZT_SCAN)
 const char* Ta_list[TA_HvPzt_NUMS_END] = {
-	"Current UserSet(mA)",
-	"Current workPoint(mA)",		
-	"Current Max(mA)",	
-	"Temper UserSet(℃)",
-	"Temper workPoint(℃)",
-	"Temper Min(℃)",	
-	"Temper Max(℃)",	
+	"Current Setpoint(mA)",
+	"Current Reference Setpoint(mA)",		
+	"Current Limit(mA)",	
+	"TEMP Setpoint(℃)",
+	"TEMP Reference Setpoint(℃)",
+	"TEMP Min Limit(℃)",	
+	"TEMP Max Limit(℃)",	
 	"Scan Bias(V)",	
 	"Scan Amp(V)",
 	"Scan Freq(HZ)",	
@@ -313,9 +313,9 @@ void sampleGrp_MainCreate(lv_obj_t* parent)
 	const char* TextList[4] =
 	{
 		"Current Sample(mA)",
-		"Current UserSet(mA)",
-		"Temper Sample(℃)",
-		"Temper UserSet(℃)",
+		"Current Reading(mA)",
+		"TEMP Sample(℃)",
+		"TEMP Reading(℃)",
 	};
 #else
 	const char* TextList[4] =
