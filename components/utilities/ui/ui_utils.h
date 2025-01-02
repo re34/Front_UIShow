@@ -405,6 +405,7 @@ extern lv_style_t style_Window;
 LV_FONT_DECLARE(font_Atlantico_22)
 //采集显示界面字体
 LV_FONT_DECLARE(font_tw_15)
+LV_FONT_DECLARE(font_tw_14)
 //采集显示界面字体
 LV_FONT_DECLARE(font_bahnschrift_17)
 LV_FONT_DECLARE(font_bahnschrift_13)

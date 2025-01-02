@@ -2121,6 +2121,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\utilities\ui\ui_utils.c</FilePath>
             </File>
+            <File>
+              <FileName>font_tw_14.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\utilities\ui\font_tw_14.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -2357,5 +2362,14 @@
     <components/>
     <files/>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>project</LayName>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>

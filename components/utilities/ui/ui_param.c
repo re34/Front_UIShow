@@ -10,7 +10,18 @@ struct _Ta_Setting _taUI;
 #define  INC_OVER_LIMIT		0
 #define  DEC_OVER_LIMIT 	1
 
+#if defined(USING_ENGLISH_VERSION)
+const char* Ta_list[TA_T_NUMS_END] = {
+  "Current Setpoint (mA)",
+	"Current Reference Setpoint(mA)",		
+	"Current MAX Limit(mA)",	
+	"TEMP Setpoint(℃)",
+	"TEMP Reference Setpoint(℃)",
+	"TEMP Min Limit(℃)",	
+	"TEMP Max Limit(℃)",	
+};
 
+#else
 const char* Ta_list[TA_T_NUMS_END] = {
     "电流设置(mA)",
 	"电流工作点(mA)",		
@@ -20,6 +31,8 @@ const char* Ta_list[TA_T_NUMS_END] = {
 	"温度最小值(℃)",	
 	"温度最大值(℃)",	
 };
+#endif
+
 
 const char* sample_icons[4] = {
 	MY_ICON_CURRENT,
@@ -215,6 +228,15 @@ void sampleGrp_MainCreate(lv_obj_t* parent)
 		LV_FLEX_ALIGN_CENTER
 	);
 	lv_obj_set_style_pad_row(parent, 6, LV_PART_MAIN); 	//设置各item之间的行间距
+#if defined(USING_ENGLISH_VERSION)	
+	const char* TextList[4] =
+	{
+		"Current Sample(mA)",
+		"Current Reading(mA)",
+		"Temper Sample(℃)",
+		"Temper Reading(℃)",
+	};
+#else
 	const char* TextList[4] =
 	{
 		"采样电流(mA)",
@@ -222,6 +244,7 @@ void sampleGrp_MainCreate(lv_obj_t* parent)
 		"采样温度(℃)",
 		"设置温度(℃)",
 	};
+#endif
 	for (int i = 0; i < 4; i++)
 	{
 		lv_obj_t *itemLabel = lv_label_create(parent);
@@ -311,7 +334,11 @@ static void btn_save_cb(lv_event_t* event)
 	{
 		if(ui_Dialog.cont != NULL)
 		{
+#if defined(USING_ENGLISH_VERSION)	
+			lv_label_set_text(ui_Dialog.title, "Are you sure to save?");
+#else
 			lv_label_set_text(ui_Dialog.title, "是否保存参数?");
+#endif
 			Gui_DialogShow(&ui_Dialog, NULL, Dialog_Type_TaSave);
 		}
 	}			
@@ -367,7 +394,11 @@ void Gui_paramInit(lv_obj_t* root)
 	lv_obj_set_size(root, LV_HOR_RES, LV_VER_RES);
 	lv_obj_set_style_border_width(root, 0, LV_PART_MAIN);
 	lv_obj_set_style_radius(root, 0, LV_PART_MAIN);
+#if !defined(USING_ENGLISH_VERSION)
 	lv_obj_set_style_text_font(root, &font_ch_16, LV_PART_MAIN);
+#else
+	lv_obj_set_style_text_font(root, &font_tw_14, LV_PART_MAIN);
+#endif	
 	lv_obj_set_style_bg_color(root, lv_color_hex(0x20253b), LV_PART_MAIN);
 	_taUI._taCont = root;
 	Gui_AddToIndevGroup(root);

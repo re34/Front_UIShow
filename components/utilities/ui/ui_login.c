@@ -34,7 +34,12 @@ void Gui_MsgboxCreate(lv_obj_t *winObj)
 	login_Dialog.cont = cont;
 
     lv_obj_t * title = lv_label_create(cont);
+#if !defined(USING_ENGLISH_VERSION)	
 	lv_obj_set_style_text_font(title, &font_ch_16, LV_PART_MAIN);
+#else
+	lv_obj_set_style_text_font(title, &font_tw_14, LV_PART_MAIN);
+#endif
+
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 20);
 	login_Dialog.bCheckFlag = Dialog_Type_Success;
 	login_Dialog.title = title;
@@ -97,11 +102,19 @@ static void loginCheck_event_cb(lv_event_t *e)
 		if((strcmp(username, LOGIN_USER) == 0) && (strcmp(password, LOGIN_PASSWORD) == 0))
 		{
 			 login_Dialog.bCheckFlag = Dialog_Type_Success;
+#if defined(USING_ENGLISH_VERSION)
+			 lv_label_set_text(login_Dialog.title, "Login Successfully!");
+#else
 			 lv_label_set_text(login_Dialog.title, "登录成功!");
+#endif
 			 _settingUI.bIsAdmin = Authority_Developer;
 		}else{
 			login_Dialog.bCheckFlag = Dialog_Type_Fail;
+#if defined(USING_ENGLISH_VERSION)
+			 lv_label_set_text(login_Dialog.title, LV_SYMBOL_WARNING"Login Failed!");
+#else			
 			lv_label_set_text(login_Dialog.title, "登录失败!");
+#endif
 			 _settingUI.bIsAdmin = Authority_User;
 		}
 		//弹出提示框
@@ -138,7 +151,11 @@ static void loginShow_event_cb(lv_event_t* e)
 		Gui_DialogShow(NULL, login_cont, Dialog_Type_None);
 	}else if(e->code == LV_EVENT_VALUE_CHANGED){
 		//快捷登录
+#if defined(USING_ENGLISH_VERSION)
+		lv_label_set_text(login_Dialog.title, "Login Successfully!");
+#else		
 		lv_label_set_text(login_Dialog.title, "登录成功!");		
+#endif
 		_settingUI.bIsAdmin = Authority_Developer;
 		Gui_DialogShow(&login_Dialog, NULL, Dialog_Type_Success);
 	}
@@ -170,8 +187,13 @@ void Gui_loginInit(void)
 	lv_obj_set_style_text_font(header, &lv_font_montserrat_22, LV_PART_MAIN);
 	lv_label_set_text(header, LV_SYMBOL_HOME);
 	lv_obj_t * label_title = lv_label_create(cont);
+#if defined(USING_ENGLISH_VERSION)
+	lv_obj_set_style_text_font(label_title, &lv_font_montserrat_22, LV_PART_MAIN);
+	lv_label_set_text(label_title, "User Login");
+#else	
 	lv_obj_set_style_text_font(label_title, &font_ch_16, LV_PART_MAIN);
 	lv_label_set_text(label_title, "用户登录");
+#endif	
 	/*********************************************
 	* 2 .添加键盘
 	*********************************************/

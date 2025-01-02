@@ -138,7 +138,7 @@ static void ui_MenuEventCb(lv_event_t *e)
 		if (LV_KEY_USER_OK == key)
 		{
 			lv_indev_wait_release(lv_indev_get_act());
-			if(app_index != PAGE_SUMMARY)	//其余2个编号的app未开放
+			if(app_index == PAGE_PARAM)	//其余2个编号的app未开放
 			{
 				anim_reback = 1;
 				lv_anim_timeline_set_reverse(anim_timeline, anim_reback);
@@ -178,7 +178,7 @@ static void ui_MenuEventCb(lv_event_t *e)
 			menu_bar->title_set(app_names[app_index]);
 			ui_switch_focus(last_inx, app_index);
 		}else{
-			if(app_index != PAGE_SUMMARY)  //PAGE_SUMMARY app未开放
+			if(app_index == PAGE_PARAM)  //PAGE_SUMMARY app未开放
 			{
 				//禁止触屏，防止动画过程中误触情况发生
 				lv_indev_enable(ts_indev_obj, false);

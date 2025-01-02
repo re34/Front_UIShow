@@ -8,8 +8,8 @@
 //#define RS485_RST_PIN    GET_PIN(H, 8)
 
 
-//串口2    rts PA1
-#define RS485_RTS_PIN    GET_PIN(A, 1)
+//串口4    rts PC12
+#define RS485_RTS_PIN    GET_PIN(C, 12)
 
 static small_modbus_t _rtu_master[2];
 rt_mq_t uart_mq = RT_NULL;
@@ -202,7 +202,7 @@ void trans_modbusInit(void)
 		rt_kprintf("init modbus failed!\n");
 		return;
 	}
-	ret = modbus_Initial(&_rtu_master[1], TA_UART_NAME, false);
+	ret = modbus_Initial(&_rtu_master[1], TA_UART_NAME, true);
 	if(ret != MODBUS_OK)
 	{
 		rt_kprintf("init modbus failed!\n");
