@@ -23,7 +23,37 @@
 #include "mod_trans.h"
 
 
+#if defined(USING_SECOND_TEMPER)
 
+const char* label_list[PARAM_ITEM_NUMS_END] = {
+/***********常用*******************/
+    "电流设置(mA)",
+	"一级温度设置(℃)",
+	"二级温度设置(℃)",
+	"扫描频率(HZ)",
+	"扫描幅值(V)",
+	"扫描偏置(V)",
+	"调制相位",
+	"调制频率(HZ)",
+/***********开发者*******************/
+	"电流告警值(mA)",
+	"温度告警值(℃)",	
+	"扫描电流(mA)",
+	"自动锁峰尖识别值",
+	"电流工作点(mA)",
+	"一级温度工作点(℃)",
+	"二级温度工作点(℃)",
+	"调制频率工作点(HZ)",	
+	"调制相位工作点",
+};
+
+const char* view_icons[VIEW_SAMPLE_NUMS] = {
+	MY_ICON_CURRENT,
+	MY_ICON_TEMPER,
+	MY_ICON_TEMPER,
+};
+
+#else
 const char* label_list[PARAM_ITEM_NUMS_END] = {
     "电流设置(mA)",
 	"温度设置(℃)",
@@ -43,6 +73,14 @@ const char* label_list[PARAM_ITEM_NUMS_END] = {
 	"调制相位工作点",
 };
 
+const char* view_icons[VIEW_SAMPLE_NUMS] = {
+	MY_ICON_CURRENT,
+	MY_ICON_TEMPER,
+	MY_ICON_DDS,
+};
+
+#endif
+
 const char* Switch_list[RELAY_NUMS] = {
 	"开关1",
 	"112",
@@ -58,11 +96,7 @@ const char *btn_names[2] = {
 	MY_ICON_AUTO_PEAK,
 };
 
-const char* view_icons[3] = {
-	MY_ICON_CURRENT,
-	MY_ICON_TEMPER,
-	MY_ICON_DDS,
-};
+
 
 struct _ui_Setting _settingUI;
 enc_flewChk_t enc_Chker;
@@ -86,13 +120,30 @@ void spinbox_judge_val(uint8_t index, bool enable)
 	switch(index)
 	{
 		case Item_Current:
-		case Item_Temper:
+		case Item_Temper_Lv1:
 			limitVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET]->_mObj);
 			if(nowVal > limitVal)
 			{
 				ret = -1;
 			}	
 		break;
+#if defined(USING_SECOND_TEMPER)
+		//二级温控与一级温控共用1个告警值
+		case Item_Temper_Lv2:
+			limitVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET - 1]->_mObj);
+			if(nowVal > limitVal)
+			{
+				ret = -1;
+			}
+#else
+		case Item_PztBias:
+			limitVal = lv_spinbox_get_value(_settingUI._mods[index - 1]->_mObj);
+			if((nowVal + limitVal) > PZT_AMP_MAX)
+			{
+				ret = -1;						
+			}	
+#endif	
+		break;			
 		default:				
 		break;
 	}
@@ -274,7 +325,43 @@ tab_module_t *subTab_create(lv_obj_t * parent, uint8_t index, uint8_t tabType, v
     if (t_tabBox != NULL)
     {
 		t_tabBox->_attr.itemIndex = index;
-		t_tabBox->_attr.range_min = 0;			
+		t_tabBox->_attr.range_min = 0;	
+
+#if defined(USING_SECOND_TEMPER)
+		//频率设置项
+		if(index == 3)
+		{
+			t_tabBox->_attr.bHasDot = false;
+			t_tabBox->_attr.range_min = 1;
+			t_tabBox->_attr.range_max = 50;
+		}		
+		else if(index == 7 || index == 15)
+		{
+			t_tabBox->_attr.bHasDot = false;
+			t_tabBox->_attr.range_min = 1;
+			t_tabBox->_attr.range_max = 6000000;
+		//PZT扫描偏置
+		}else if(index == 5)
+		{
+			t_tabBox->_attr.bHasDot = true;	
+			t_tabBox->_attr.range_max = 100000;
+		}
+		//pzt扫描幅值		
+		else if(index == 4)
+		{
+			t_tabBox->_attr.bHasDot = true;	
+			t_tabBox->_attr.range_max = 100000;
+		}
+		//dds相位
+		else if(index == 6 || index == 16)
+		{
+			t_tabBox->_attr.bHasDot = false;
+			t_tabBox->_attr.range_max = 360;
+		}else{
+			t_tabBox->_attr.bHasDot = true;
+			t_tabBox->_attr.range_max = 999999;
+		}
+#else		
 		//频率设置项
 		if(index == 2 || index == 6 || index == 13)
 		{
@@ -301,7 +388,8 @@ tab_module_t *subTab_create(lv_obj_t * parent, uint8_t index, uint8_t tabType, v
 		}else{
 			t_tabBox->_attr.bHasDot = true;
 			t_tabBox->_attr.range_max = 999999;
-		}			
+		}	
+#endif
         t_tabBox->_root = lv_obj_create(parent);
 		if(tabType == ENUM_TYPE_TXT)
 		{
@@ -757,12 +845,20 @@ void viewGrp_MainCreate(lv_obj_t* parent)
 		LV_FLEX_ALIGN_CENTER
 	);
 	lv_obj_set_style_pad_row(parent, 5, LV_PART_MAIN); 	//设置各item之间的行间距
-	const char* TextList[3] =
+	const char* TextList[VIEW_SAMPLE_NUMS] =	
+#if defined(USING_SECOND_TEMPER)
+	{
+		"电流(mA)",
+		"一级温度(℃)",
+		"二级温度(℃)",		
+	};
+#else	
 	{
 		"电流(mA)",
 		"温度(℃)",
 		"积分",
 	};
+#endif
 	//监控按钮		
 	lv_obj_t *monitor_cont = lv_obj_create(parent);
 	lv_obj_remove_style_all(monitor_cont);

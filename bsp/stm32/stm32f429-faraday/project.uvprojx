@@ -2101,6 +2101,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\utilities\ui\ui_utils.c</FilePath>
             </File>
+            <File>
+              <FileName>font_symbol_25.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\utilities\ui\font_symbol_25.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -12,17 +12,33 @@
 /*组件高度*/
 #define MODULE_HEIGHT       (TOP_HEIGHT - MTM_GAP * 2)
 
+#define SMALL_MODULE_WIDTH  (TOP_WITH - MTM_GAP * 4) / 3
 
+#if defined(USING_SECOND_TEMPER)
+const char* list2_icons[MAIN_SAMPLE_NUMS] = {
+	MY_ICON_CURRENT,
+	MY_ICON_TEMPER,
+	MY_ICON_TEMPER,
+};
 
-const char* list2_icons[2] = {
+const char* list1_label[MAIN_SAMPLE_NUMS] = 
+{
+	"Current(mA)",
+	"Temper1(℃)",
+	"Temper2(℃)",	
+};
+#else
+
+const char* list2_icons[MAIN_SAMPLE_NUMS] = {
 	MY_SYMBOL_FREQ,
 	MY_SYMBOL_TEMPER,
 };
 
-const char* list1_label[2] = {
+const char* list1_label[MAIN_SAMPLE_NUMS] = {
 	"Current (mA)",
 	"Temperature (℃)",
 };
+#endif
 
 struct _ui_info ui;
 
@@ -45,10 +61,34 @@ void lv_obj_set_opa_scale(lv_obj_t* obj, int16_t opa)
 }
 
 
+
+#if defined(USING_SECOND_TEMPER)
 void viewGrp_Update(viewInfo_t *info, uint8_t index)
 {
 	uint32_t tmp = 0;
-	if(index <= Item_Temper)
+	int32_t warnVal = 0;
+	tmp = ui_sample[DATA_OFFSET + index].recvDate;
+	if(tmp & 0xF0000000) //负数
+		return;
+	//更新进度条
+	lv_bar_set_value(info->Bar_Main, tmp / 1000, LV_ANIM_ON);
+	if(index == Item_Temper_Lv2)
+		warnVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET - 1]->_mObj);
+	else
+		warnVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET]->_mObj);		
+	//采样值正常或无告警采样项正常显示数值
+	if(tmp < warnVal)
+		lv_label_set_text_fmt(info->Bar_icon, "%.2f", ((float)tmp / 1000));
+	else
+		lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
+}
+
+#else
+
+void viewGrp_Update(viewInfo_t *info, uint8_t index)
+{
+	uint32_t tmp = 0;
+	if(index <= Item_Temper_Lv1)
 		tmp = ui_sample[DATA_OFFSET + index].recvDate;
 	else
 		tmp = ui_sample[1].recvDate;
@@ -57,17 +97,22 @@ void viewGrp_Update(viewInfo_t *info, uint8_t index)
 	//更新进度条
 	lv_bar_set_value(info->Bar_Main, tmp / 1000, LV_ANIM_ON);
 	int32_t warnVal = lv_spinbox_get_value(_settingUI._mods[index + ALARM_OFFSET]->_mObj);
-	if(tmp < warnVal || index > Item_Temper)
+	if(tmp < warnVal || index > Item_Temper_Lv1)
 		lv_label_set_text_fmt(info->Bar_icon, "%.2f", ((float)tmp / 1000));
 	else
 		lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
 }
+#endif
+
 
 void sample_update(uint8_t lockState)
 {
 	module_set_usage_value(ui.topInfo.I_module);
-	module_set_usage_value(ui.topInfo.T_module);
-	
+		module_set_usage_value(ui.topInfo.T1_module);
+#if defined(USING_SECOND_TEMPER)
+		module_set_usage_value(ui.topInfo.T2_module);
+#endif
+
 	lv_label_set_text_fmt(
 		ui.bottomInfo.labelInfoGrp[0].lableValue,
 		"%d",
@@ -213,7 +258,7 @@ void BottomInfo_Create(lv_obj_t* parent)
 		LV_FLEX_ALIGN_CENTER
 	);
 	ui.bottomInfo.cont = cont;
-	const char* unitText[6] =
+	const char* unitText[OTHER_SAMPLE_NUMS] =
 	{
 		"Addr",						//地址
 		"Integral",					//积分
@@ -284,29 +329,38 @@ static void chart_draw_event_cb(lv_event_t* event)
 
 
 
-static void module_style_init(module_t* module, uint8_t icon_index)
+static void module_style_init(module_t* module, uint8_t icon_index, lv_coord_t w, lv_coord_t h)
 {
     lv_obj_remove_style_all(module->obj_root);
     lv_obj_set_style_radius(module->obj_root, 6, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(module->obj_root, LV_OPA_50, LV_PART_MAIN);
     lv_obj_set_style_bg_color(module->obj_root, lv_color_hex(0x393d45), LV_PART_MAIN);
-    lv_obj_set_size(module->obj_root, MODULE_WIDTH, MODULE_HEIGHT);
+    lv_obj_set_size(module->obj_root, w, h);
     lv_obj_clear_flag(module->obj_root, LV_OBJ_FLAG_SCROLLABLE);
 
     /*Icon*/
 	lv_obj_remove_style_all(module->iconlabel);
 	lv_obj_set_style_text_color(module->iconlabel, lv_color_hex(0xff931e), LV_PART_MAIN);
+#if defined(USING_SECOND_TEMPER)
+	lv_obj_set_style_text_font(module->iconlabel, &font_symbol_25, LV_PART_MAIN);
+#else	
 	lv_obj_set_style_text_font(module->iconlabel, &font_symbol_32, LV_PART_MAIN);
+#endif
 	lv_label_set_text(module->iconlabel, list2_icons[icon_index]);
-	lv_obj_align(module->iconlabel, LV_ALIGN_TOP_LEFT, 15, 10);
+	
 
 	lv_obj_t *icon_label = lv_label_create(module->obj_root);
 	lv_obj_remove_style_all(icon_label);
 	lv_obj_set_style_text_color(icon_label, lv_color_hex(0xff931e), LV_PART_MAIN);
 	lv_obj_set_style_text_font(icon_label, &font_tw_15, LV_PART_MAIN);
 	lv_label_set_text(icon_label, list1_label[icon_index]);
+#if defined(USING_SECOND_TEMPER)
+	lv_obj_align(module->iconlabel, LV_ALIGN_TOP_LEFT, 6, 10);
+	lv_obj_align_to(icon_label, module->iconlabel, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
+#else	
+	lv_obj_align(module->iconlabel, LV_ALIGN_TOP_LEFT, 15, 10);
 	lv_obj_align_to(icon_label, module->iconlabel, LV_ALIGN_OUT_RIGHT_MID, 30, -8);
-   
+#endif   
     /*Utilize Label*/
     lv_obj_remove_style_all(module->usage_label);
     lv_obj_set_style_text_color(module->usage_label, lv_color_white(), LV_PART_MAIN);
@@ -321,7 +375,7 @@ static void module_style_init(module_t* module, uint8_t icon_index)
     lv_obj_set_style_pad_all(module->usage_chart, 0, LV_PART_MAIN);
     lv_obj_set_style_size(module->usage_chart, 0, LV_PART_INDICATOR);     //在折线上不显示点
     lv_obj_set_style_opa(module->usage_chart, LV_OPA_80, LV_PART_ITEMS);
-    lv_obj_set_size(module->usage_chart, MODULE_WIDTH, LV_PCT(80));
+    lv_obj_set_size(module->usage_chart, w, LV_PCT(80));
     lv_obj_align(module->usage_chart, LV_ALIGN_BOTTOM_LEFT, 0, -5);
     lv_chart_set_type(module->usage_chart, LV_CHART_TYPE_LINE);
     lv_chart_set_range(module->usage_chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100);
@@ -332,7 +386,7 @@ static void module_style_init(module_t* module, uint8_t icon_index)
 }
 
 
-static module_t* module_create(lv_obj_t* parent, uint8_t icon_index)
+static module_t* module_create(lv_obj_t* parent, uint8_t icon_index, lv_coord_t w, lv_coord_t h)
 {
     module_t* _module = (module_t*)rt_malloc(sizeof(module_t));
     if (_module != NULL)
@@ -342,7 +396,7 @@ static module_t* module_create(lv_obj_t* parent, uint8_t icon_index)
         _module->usage_label = lv_label_create(_module->obj_root);
         _module->usage_chart = lv_chart_create(_module->obj_root);
         _module->usage_series = lv_chart_add_series(_module->usage_chart, lv_color_hex(0x6a98fa)/*线条颜色*/, LV_CHART_AXIS_PRIMARY_Y);
-		module_style_init(_module, icon_index);
+		module_style_init(_module, icon_index, w, h);
 		//采样值初始化
 		_module->mod_sample = &ui_sample[DATA_OFFSET + icon_index];
     }
@@ -352,7 +406,10 @@ static module_t* module_create(lv_obj_t* parent, uint8_t icon_index)
 static void module_free(void)
 {
 	rt_free(ui.topInfo.I_module);
-	rt_free(ui.topInfo.T_module);	
+	rt_free(ui.topInfo.T1_module);	
+#if defined(USING_SECOND_TEMPER)
+	rt_free(ui.topInfo.T2_module);	
+#endif	
 }
 
 
@@ -371,8 +428,14 @@ void TopInfo_Create(lv_obj_t* parent)
         LV_FLEX_ALIGN_CENTER
     );
 	ui.topInfo.cont = cont;
-    ui.topInfo.I_module = module_create(cont, 0);
-    ui.topInfo.T_module = module_create(cont, 1);
+#if defined(USING_SECOND_TEMPER)	
+    ui.topInfo.I_module = module_create(cont, 0, SMALL_MODULE_WIDTH, MODULE_HEIGHT);
+    ui.topInfo.T1_module = module_create(cont, 1, SMALL_MODULE_WIDTH, MODULE_HEIGHT);
+    ui.topInfo.T2_module = module_create(cont, 2, SMALL_MODULE_WIDTH, MODULE_HEIGHT);
+#else
+    ui.topInfo.I_module = module_create(cont, 0, MODULE_WIDTH, MODULE_HEIGHT);	
+    ui.topInfo.T1_module = module_create(cont, 1, MODULE_WIDTH, MODULE_HEIGHT);
+#endif	
 }
 
 

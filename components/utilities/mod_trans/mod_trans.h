@@ -28,13 +28,22 @@
 
 
 //LD
-#define LD_UART_NAME 		"uart6"
 
-#define LOCK_STATE_ADDR 	5
-#define MODBUS_LD_CFG_ADDR	16 	 //LD采样起始寄存器地址
-#define ITEM_ADDR_HEAD		MODBUS_LD_CFG_ADDR + 2
+
+#if defined(USING_SECOND_TEMPER)
+#define MODBUS_LD_CFG_ADDR	18 	 //LD配置起始寄存器地址
+#define MAX_SAMPLE_NUM 		9
+#define MAX_CONFIG_NUM		18	 //switch + 17 spinbox
+#else
+#define MODBUS_LD_CFG_ADDR	16 	 //LD配置起始寄存器地址
 #define MAX_SAMPLE_NUM 		8
 #define MAX_CONFIG_NUM		16	 //switch + 15 spinbox
+
+#endif
+#define LOCK_STATE_ADDR 	5
+#define LD_UART_NAME 		"uart6"
+#define ITEM_ADDR_HEAD		MODBUS_LD_CFG_ADDR + 2
+
 
 //TA
 #define TA_UART_NAME 				"uart2"

@@ -150,6 +150,7 @@
 #define RT_USING_UTILS_LIST
 #define RT_USING_INPUT_DEV
 #define RT_USING_USER_UI
+#define USING_SECOND_TEMPER
 #define RT_USING_USER_TRANSPORT
 
 /* RT-Thread online packages */

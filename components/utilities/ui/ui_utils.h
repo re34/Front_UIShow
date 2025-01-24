@@ -87,12 +87,44 @@
 
 
 //LD参数数量
-#define DEVELOP_ITEM_NUMS_END 			7     //常用参数数量
-#define PARAM_ITEM_NUMS_END				15	  //其他参数数量
-#define RELAY_NUMS 						7	  //开关继电器数量
+#if defined(USING_SECOND_TEMPER)
 
+#define DEVELOP_ITEM_NUMS_END 			8     //常用参数数量
+#define PARAM_ITEM_NUMS_END				17	  //所有参数数量
+#define MAIN_SAMPLE_NUMS				3
+#define ALARM_OFFSET					8	  //告警值与设置值的序号偏移
+
+enum E_LD_ItemIndex
+{
+	Item_Current   = 0,
+	Item_Temper_Lv1	   = 1,
+	Item_Temper_Lv2	   = 2,
+	Item_PztAmp	   = 4,
+	Item_PztBias   = 5,
+};
+
+#else
+
+#define DEVELOP_ITEM_NUMS_END 			7     //常用参数数量
+#define PARAM_ITEM_NUMS_END				15	  //所有参数数量	
+#define MAIN_SAMPLE_NUMS				2
+#define ALARM_OFFSET					7	  //告警值与设置值的序号偏移
+
+
+enum E_LD_ItemIndex
+{
+	Item_Current   = 0,
+	Item_Temper_Lv1	= 1,
+	Item_PztAmp	   = 3,
+	Item_PztBias   = 4,
+};	
+
+#endif
+
+#define VIEW_SAMPLE_NUMS				3
+#define OTHER_SAMPLE_NUMS				6
+#define RELAY_NUMS 						7	  //开关继电器数量
 #define DATA_OFFSET						6	  //采集(副)与采集（主）数组偏移
-#define ALARM_OFFSET					7	  //
 #define IDLE_OVERFLOW_TIME 				4	  //4X50 = 200ms空闲发送数据
 
 #define RANGE_MIN	45			  //弧形进度条初始角
@@ -100,6 +132,10 @@
 
 
 #define PZT_AMP_MAX						14000 // 14V
+
+
+
+
 
 enum {
 	ENUM_TYPE_SW = 0,
@@ -156,13 +192,7 @@ enum E_DialogType
 	Dialog_Type_None			= 10,	
 };
 
-enum E_LD_ItemIndex
-{
-	Item_Current   = 0,
-	Item_Temper	   = 1,
-	Item_PztAmp	   = 3,
-	Item_PztBias   = 4,
-};
+
 
 //TA采样数据序列
 enum E_TA_ItemIndex
@@ -269,13 +299,17 @@ struct _ui_info
 	struct
 	{
 		lv_obj_t* cont;
-		module_t* I_module;
-		module_t* T_module;
+		module_t* I_module;		
+		module_t* T1_module;
+#if defined(USING_SECOND_TEMPER)		
+		module_t* T2_module;
+#endif
+
 	}topInfo;
 	struct
 	{
 		lv_obj_t* cont;
-		SubInfo_t labelInfoGrp[6];
+		SubInfo_t labelInfoGrp[OTHER_SAMPLE_NUMS];
 		bool bFirstEntryLock;
 	} bottomInfo;
 	struct
@@ -394,6 +428,7 @@ LV_FONT_DECLARE(font_bahnschrift_35)
 //设置界面字体
 LV_FONT_DECLARE(font_symbol_20)
 //主界面字体
+LV_FONT_DECLARE(font_symbol_25)
 LV_FONT_DECLARE(font_symbol_32)
 //汉字
 LV_FONT_DECLARE(font_ch_16)
