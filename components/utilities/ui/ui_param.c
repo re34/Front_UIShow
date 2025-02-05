@@ -282,7 +282,7 @@ void sampleGrp_SubCreate(lv_obj_t* parent, viewInfo_t* info, uint8_t i)
 	lv_obj_set_style_bg_color(bar, lv_color_hex(0xd2d2d6), LV_PART_MAIN); //进度条背景色
 	lv_obj_set_size(bar, 100, 15);
 	if(i <= 1)
-		lv_bar_set_range(bar, 0, 5);	//5A
+		lv_bar_set_range(bar, 0, 275);	//5A
 	else
 		lv_bar_set_range(bar, 0, 100);
 	lv_obj_align_to(bar, itemLabel, LV_ALIGN_OUT_RIGHT_MID, 8, 0);
@@ -361,12 +361,11 @@ void viewBar_Update(viewInfo_t *info, uint8_t index)
 	if(tmp & 0xF0000000) //负数
 		return;
 
-#if defined(UI_USING_MOD_WARN)
 	int32_t warnVal_Max = 0;
 	int32_t warnVal_Min = 0;
 	int ret = 0;
 	//更新进度条
-	lv_bar_set_value(info->Bar_Main, (index > 1)?(tmp / 1000):(tmp / 1000000), LV_ANIM_ON);
+	lv_bar_set_value(info->Bar_Main, tmp / 1000, LV_ANIM_ON);
 	switch(index)
 	{
 		case Item_Ta_Sample_I:	//采样电流
@@ -389,18 +388,12 @@ void viewBar_Update(viewInfo_t *info, uint8_t index)
 		default:
 		break;
 	}
+#if defined(UI_USING_MOD_WARN)	
 	if(ret < 0)
 		lv_label_set_text(info->Bar_icon, LV_SYMBOL_WARNING);
 	else
+#endif		
 		lv_label_set_text_fmt(info->Bar_icon, "%.2f", (float)tmp / 1000);
-#else
-	/*****************************************************************************************************
-	*1. 单位：A 及 m℃
-	*lv_label_set_text_fmt(info->Bar_icon, "%.2f", (index > 1)?((float)tmp / 1000):((float)tmp / 1000000));
-	*****************************************************************************************************/
-	/*单位：mA 及 m℃*/
-	lv_label_set_text_fmt(info->Bar_icon, "%.2f", (float)tmp / 1000);
-#endif
 }
 
 

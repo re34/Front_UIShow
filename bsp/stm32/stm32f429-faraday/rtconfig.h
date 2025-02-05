@@ -154,8 +154,9 @@
 #define RT_USING_DAC_DEV
 #define RT_USING_INPUT_DEV
 #define RT_USING_USER_UI
-#define USING_ENGLISH_VERSION
+//#define USING_ENGLISH_VERSION
 #define UI_USING_PAGE_PARAM
+// #define UI_USING_MOD_WARN
 #define RT_USING_USER_TRANSPORT
 
 /* RT-Thread online packages */
